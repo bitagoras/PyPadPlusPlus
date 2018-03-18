@@ -25,12 +25,11 @@ class PseudoFileOut:
 
 class pyPad:
     def __init__(self):
-        '''Initializes PyPadPlusPlus to prepare Notepad++ 
+        '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         sys.stdout=PseudoFileOut(console.write)
         sys.stderr=PseudoFileOut(console.writeError)
         sys.stdout.outp=PseudoFileOut(console.write)
-        self.markers = None
         self.thread = None
         self.lock = False
         self.holdMarker = False
@@ -38,34 +37,43 @@ class pyPad:
         editor.grabFocus()
         console.clear()
         editor.setTargetStart(0)
-        editor.clearCallbacks([SCINTILLANOTIFICATION.CHARADDED])
-        editor.callback(self.onAutocomplete, [SCINTILLANOTIFICATION.CHARADDED])
-        editor.clearCallbacks([SCINTILLANOTIFICATION.MODIFIED])
-        editor.callback(self.textModified, [SCINTILLANOTIFICATION.MODIFIED])
         self.interp = code.InteractiveInterpreter(globals())
         editor.callTipSetBack((255,255,225))
         console.editor.setReadOnly(0)
 		#editor.autoCSetIgnoreCase(True)
-		
-		# Marker margin
-        editor.setMarginWidthN(3, 4)
-        editor.setMarginMaskN(3, 256+128)
-        editor.markerDefine(8, MARKERSYMBOL.LEFTRECT)
-        editor.markerDefine(7, MARKERSYMBOL.LEFTRECT)
-        editor.markerDeleteAll(8)
-        editor.markerDeleteAll(7)
-        self.setMarkers(color='a')
         editor.autoCSetSeparator(ord('\t'))
 
+		# Marker margin
+        self.markers = None
+        editor.markerDeleteAll(8)
+        editor.markerDeleteAll(7)
+        editor.markerDeleteAll(6)
+        editor.markerDefine(8, MARKERSYMBOL.LEFTRECT)
+        editor.markerDefine(7, MARKERSYMBOL.RGBAIMAGE)
+        editor.markerDefine(6, MARKERSYMBOL.RGBAIMAGE)
+        editor.setMarginWidthN(3, 4)
+        editor.setMarginMaskN(3, 256+128+64)
+
+        self.fade = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 252, 246, 240, 234, 228, 223,
+            217, 211, 205, 199, 193, 188, 182, 176, 170, 164, 159, 153, 147,
+            141, 135, 130, 124, 118, 112, 106, 101, 95, 89, 83, 77, 71, 66,
+            60, 54, 48, 42, 37, 31, 25]
+
         editor.setMouseDwellTime(750)
-        editor.callback(self.onMouseDwell, [SCINTILLANOTIFICATION.DWELLSTART])        
-        
+        editor.callback(self.onMouseDwell, [SCINTILLANOTIFICATION.DWELLSTART])
+        editor.clearCallbacks([SCINTILLANOTIFICATION.CHARADDED])
+        editor.callback(self.onAutocomplete, [SCINTILLANOTIFICATION.CHARADDED])
+        editor.clearCallbacks([SCINTILLANOTIFICATION.MODIFIED])
+        editor.callback(self.textModified, [SCINTILLANOTIFICATION.MODIFIED])
+
     def __del__(self):
         '''Clear call backs on exit.'''
         editor.clearCallbacks([SCINTILLANOTIFICATION.CHARADDED])
         editor.clearCallbacks([SCINTILLANOTIFICATION.MODIFIED])
         editor.clearCallbacks([SCINTILLANOTIFICATION.DWELLSTART])
-        
+
     def textModified(self, args):
         '''When the text is modified the execution markers
         will be hidden, except when the code is running or
@@ -73,6 +81,7 @@ class pyPad:
         if args['text']:
             id = notepad.getCurrentBufferID()
             if self.markers is not None and self.markers != id and not (self.lock or self.holdMarker):
+                editor.markerDeleteAll(6)
                 editor.markerDeleteAll(7)
                 editor.markerDeleteAll(8)
                 self.markers = id
@@ -110,12 +119,12 @@ class pyPad:
                 for i,ct in enumerate(calltip[:3]):
                     accumulate += len(ct)
                 editor.callTipSetHlt(0, accumulate)
-                
+
     def maxCallTip(self, value):
         '''Truncates text to fit in a call tip window.'''
         nMax = 2000  # max length
         cMax = 100  # max colums
-        lMax = 30  # max lines
+        lMax = 22  # max lines
         endLine = ''
         n = len(value)
         if n > nMax:
@@ -123,7 +132,7 @@ class pyPad:
             endLine = '\n...'
         value = '\n'.join(['\n'.join(textwrap.wrap(i, cMax)) for i in value[:nMax].split('\n')[:lMax]])
         return value + endLine
-                
+
     def onAutocomplete(self, args):
         '''Check if auto complete data can added and displayed:
         "." after objects: show auto completion list with properties and methods
@@ -164,7 +173,7 @@ class pyPad:
                     editor.autoCShow(0, '\t'.join([repr(i).replace('\t','\\t') for i in object.keys()]))
             except:
                 pass
-        
+
     def getCodeElement(self, iPos):
         '''get the whole expression with the context of a
         variable that is required to evaluate the variable'''
@@ -172,8 +181,7 @@ class pyPad:
         iStart = editor.positionFromLine(iLine)
         linePart = editor.getTextRange(iStart, iPos - 1)
         return introspect.getRoot(linePart)
-        
-        
+
     def completeBlockStart(self, iLine):
         '''Add preceding lines that are required to execute
         the selected code, e.g. the beginning of an indented
@@ -182,7 +190,8 @@ class pyPad:
         n = editor.getLength()
         while iLine >= 0:
             iStart = editor.positionFromLine(iLine)
-            line = editor.getTextRange(iStart, min(iStart + 10, n-1)).rstrip()
+            iEnd = editor.getLineEndPosition(iLine)
+            line = editor.getTextRange(iStart, iEnd).rstrip()
             lineRequiresMoreLinesBefore = (lineRequiresMoreLinesBefore and len(line)==0) \
                     or line.startswith(' ') or line.startswith('\t') \
                     or line.startswith('else:') or line.startswith('elif') \
@@ -228,7 +237,7 @@ class pyPad:
         lang = notepad.getLangType()
         if lang == LANGTYPE.TXT and '.' not in filename:
             notepad.setLangType(LANGTYPE.PYTHON)
-            
+
         # add more lines until the parser is happy or finds
         # a syntax error
         code = None
@@ -260,11 +269,11 @@ class pyPad:
         if err:
             editor.setSelectionStart(iPos)
             editor.scrollCaret()
-            
+
         # Start a thread to execute the code
-        
+
         if not err:
-            
+
             iNewPos = max(iPos, editor.positionFromLine(iLineEnd + 1))
             editor.setSelectionStart(iNewPos)
             editor.setCurrentPos(iNewPos)
@@ -280,7 +289,7 @@ class pyPad:
                     self.interp.showtraceback()
             else:
                 self.thread = threading.Thread(name='threadCode', target=self.threadCode, args=(code,))
-                
+
             if not err:
                 self.holdMarker = True
                 self.thread.start()
@@ -306,11 +315,11 @@ class pyPad:
             self.setMarkers(color='r')
         self.lock = False
         console.editor.setReadOnly(0)
-        
+
         # wait some seconds until the markers can hide
-        time.sleep(2) 
+        time.sleep(3)
         self.holdMarker = False
-        
+
     def threadCode(self,code):
         '''Thread of the running code in case the code is
         not a value. When finished, the execution markers are
@@ -327,9 +336,9 @@ class pyPad:
             self.setMarkers(color='r')
         self.lock = False
         console.editor.setReadOnly(0)
-        
+
         # wait some seconds until the markers can hide
-        time.sleep(2)
+        time.sleep(3)
         self.holdMarker = False
 
     def showtraceback(self):
@@ -350,39 +359,52 @@ class pyPad:
         finally:
             tblist = tb = None
         map(sys.stderr, list)
-            
-    def setMarkers(self, iRange=(0, 0), block='', color=None):
+
+    def setMarkers(self, iRange=(0, 0), block=None, color=None):
         '''Set markers at the beginning and end of the executed
         code block, to show the user which part is actually executed
         and if the code is still running or finished or if errors
         occurred.'''
+        if color == 'r':
+            c = (255,100,100) # color error
+        elif color == 'f':
+            c = (255,220,0) # color finished
+        elif color == 'a':
+            c = (100,100,100) # color active
+            #c = (200,200,200) # color active
+            #c = (50,50,255) # color active
+            #c = (127, 54, 237) # color active
         if block or color is None:
             editor.markerDeleteAll(8)
             editor.markerDeleteAll(7)
+            editor.markerDeleteAll(6)
+            self.markers = False
+        if block or color is not None:
+            hLine = len(self.fade)
+            rgb = chr(c[0])+chr(c[1])+chr(c[2])
+            rgba = ''.join([(rgb+chr(f))*4 for f in self.fade])
+            rgba_r = ''.join([(rgb+chr(f))*4 for f in reversed(self.fade)])
+            editor.rGBAImageSetWidth(4)
+            editor.rGBAImageSetHeight(hLine)
+            editor.markerDefineRGBAImage(6, rgba)
+            editor.markerDefineRGBAImage(7, rgba_r)
+            editor.markerSetBack(8, c)
         if block:
             iLineStart, iLineEnd = iRange
             lineHasCode = [len(line) > 0 and not (line.isspace() or line.startswith('#')) for line in block.splitlines()]
             linesWithCode = [i for i, c in enumerate(lineHasCode) if c]
             firstMarker = iLineStart + linesWithCode[0]
             lastMarker = iLineStart + linesWithCode[-1]
-            editor.markerAdd(firstMarker, 8)
-            if (lastMarker-firstMarker) >= 1:
-                editor.markerAdd(lastMarker, 8)
-            if (lastMarker-firstMarker) >= 2:
-                editor.markerAdd(firstMarker+1, 7)
-            if (lastMarker-firstMarker) >= 3:
+            nExtraLines = lastMarker - firstMarker + 1
+            if nExtraLines <= 4:
+                for iLine in range(nExtraLines):
+                    editor.markerAdd(firstMarker+iLine, 8)
+            else:
+                editor.markerAdd(firstMarker, 8)
+                editor.markerAdd(firstMarker+1, 6)
                 editor.markerAdd(lastMarker-1, 7)
+                editor.markerAdd(lastMarker, 8)
             self.markers = True
-        if color == 'r':
-            colorFull = (255,100,100) # color error
-        elif color == 'f':
-            colorFull = (255,220,0) # color finished
-        elif color == 'a':
-            colorFull = (100,100,100) # color active
-            #colorFull = (200,200,200) # color active
-            #colorFull = (50,50,255) # color active
-            #colorFull = (127, 54, 237) # color active
-        colorBack = (228, 228, 228)
-        colorHalf = tuple([(1*colorFull[i] + 2*colorBack[i]) // 3 for i in 0,1,2])
-        editor.markerSetBack(8, colorFull) # color gray
-        editor.markerSetBack(7, colorHalf) # color bright gray
+            
+            
+            
