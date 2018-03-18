@@ -40,10 +40,11 @@ class pyPad:
         self.interp = code.InteractiveInterpreter(globals())
         editor.callTipSetBack((255,255,225))
         console.editor.setReadOnly(0)
-		#editor.autoCSetIgnoreCase(True)
+		# editor.autoCSetIgnoreCase(True)
         editor.autoCSetSeparator(ord('\t'))
 
 		# Marker margin
+        self.markerWidth = 3
         self.markers = None
         editor.markerDeleteAll(8)
         editor.markerDeleteAll(7)
@@ -51,7 +52,7 @@ class pyPad:
         editor.markerDefine(8, MARKERSYMBOL.LEFTRECT)
         editor.markerDefine(7, MARKERSYMBOL.RGBAIMAGE)
         editor.markerDefine(6, MARKERSYMBOL.RGBAIMAGE)
-        editor.setMarginWidthN(3, 4)
+        editor.setMarginWidthN(3, self.markerWidth)
         editor.setMarginMaskN(3, 256+128+64)
 
         self.fade = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -207,15 +208,17 @@ class pyPad:
         be executed seperately in the next step.'''
         n = editor.getLength()
         iStartTest = editor.positionFromLine(iLine)
-        iEnd = iEndTest = editor.getLineEndPosition(iLine)
+        iLastWithCode = iEnd = iEndTest = editor.getLineEndPosition(iLine)
         while iEndTest < n:
             lineTest = editor.getTextRange(iStartTest, iEndTest).rstrip()
-            lineBelongsToBlock = (len(lineTest)==0) or lineTest.startswith(' ') \
+            noCodeLine = len(lineTest) == 0 or lineTest.startswith('#')
+            lineBelongsToBlock = len(lineTest)==0 or lineTest.startswith(' ') \
                     or lineTest.startswith('\t') or lineTest.startswith('else:') \
                     or lineTest.startswith('elif') or lineTest.startswith('except:') \
                     or lineTest.startswith('finally:')
             if not lineBelongsToBlock:
-                yield iEnd
+                yield iLastWithCode
+            if not noCodeLine: iLastWithCode = iEndTest
             iEnd = iEndTest
             iLine += 1
             iEndTest = editor.getLineEndPosition(iLine)
@@ -370,10 +373,8 @@ class pyPad:
         elif color == 'f':
             c = (255,220,0) # color finished
         elif color == 'a':
-            c = (100,100,100) # color active
-            #c = (200,200,200) # color active
-            #c = (50,50,255) # color active
-            #c = (127, 54, 237) # color active
+            c = (150,150,150) # color active
+            #c = (53, 107, 196) # color active
         if block or color is None:
             editor.markerDeleteAll(8)
             editor.markerDeleteAll(7)
@@ -382,9 +383,9 @@ class pyPad:
         if block or color is not None:
             hLine = len(self.fade)
             rgb = chr(c[0])+chr(c[1])+chr(c[2])
-            rgba = ''.join([(rgb+chr(f))*4 for f in self.fade])
-            rgba_r = ''.join([(rgb+chr(f))*4 for f in reversed(self.fade)])
-            editor.rGBAImageSetWidth(4)
+            rgba = ''.join([(rgb+chr(f))*self.markerWidth for f in self.fade])
+            rgba_r = ''.join([(rgb+chr(f))*self.markerWidth for f in reversed(self.fade)])
+            editor.rGBAImageSetWidth(self.markerWidth)
             editor.rGBAImageSetHeight(hLine)
             editor.markerDefineRGBAImage(6, rgba)
             editor.markerDefineRGBAImage(7, rgba_r)
@@ -405,6 +406,3 @@ class pyPad:
                 editor.markerAdd(lastMarker-1, 7)
                 editor.markerAdd(lastMarker, 8)
             self.markers = True
-            
-            
-            
