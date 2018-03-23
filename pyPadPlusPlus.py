@@ -229,6 +229,12 @@ class pyPad:
         '''Executes the smallest possible code element
         for the current selection.'''
         if self.lock: return
+        filename = notepad.getCurrentFilename()
+        lang = notepad.getLangType()
+        if lang == LANGTYPE.TXT and '.' not in filename:
+            notepad.setLangType(LANGTYPE.PYTHON)
+        elif lang != LANGTYPE.PYTHON: return
+        
         iPos = editor.getCurrentPos()
         iLineStart = editor.lineFromPosition(editor.getSelectionStart())
         iLineEnd = max(iLineStart, editor.lineFromPosition(editor.getSelectionEnd()-1))
@@ -236,10 +242,6 @@ class pyPad:
         iLineStart = editor.lineFromPosition(iStart)
         getEnd = self.completeBlockEnd(iLineEnd)
         iEnd = next(getEnd)
-        filename = notepad.getCurrentFilename()
-        lang = notepad.getLangType()
-        if lang == LANGTYPE.TXT and '.' not in filename:
-            notepad.setLangType(LANGTYPE.PYTHON)
 
         # add more lines until the parser is happy or finds
         # a syntax error
