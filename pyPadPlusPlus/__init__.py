@@ -31,7 +31,7 @@ class pyPad:
         editor.grabFocus()
         console.clear()
         editor.setTargetStart(0)
-        if pythonKernel:
+        if externalPython:
             self.interp = pyPadHost.interpreter()
         else:
             self.interp = pyPadClient.interpreter()
