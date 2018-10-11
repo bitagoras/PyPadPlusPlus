@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "0.1"
+__version__ = "0.2"
 
 from Npp import *
 import code, sys, time
