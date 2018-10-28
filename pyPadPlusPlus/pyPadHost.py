@@ -21,7 +21,6 @@ class interpreter:
                         universal_newlines=True)
         time.sleep(1)
         self.proc.stdin.flush()
-        # self.out(self.proc.stderr.readline())
 
     def callPipe(self, command, args=()):
         self.proc.stdin.write(command)
@@ -30,7 +29,7 @@ class interpreter:
         self.proc.stdin.write(toPipe)
         self.proc.stdin.flush()
         fromPipe = self.proc.stdout.readline()
-        assert len(fromPipe) > 1
+        assert len(fromPipe) > 1, command
         nBytes = int(fromPipe, 16)
         fromPipe = self.proc.stdout.read(nBytes)
         ret = pickle.loads(fromPipe)
@@ -44,6 +43,8 @@ class interpreter:
         # E: interp.autoCompleteObject,
         # F: interp.autoCompleteFunction,
         # G: interp.autoCompleteDict,
+        # H: interp.getFullCallTip,
+        # H: interp.flush
 
     def tryCode(self, iLineStart, filename, block):
         return self.callPipe('A', (iLineStart, filename, block))
@@ -66,6 +67,12 @@ class interpreter:
     def autoCompleteDict(self, linePart):
         return self.callPipe('G', (linePart,))
 
+    def getFullCallTip(self, linePart):
+        return self.callPipe('H', (linePart,))
+        
+    def flush(self):
+        return self.callPipe('I')
+        
     def out(self, text):
         if type(text) is not str: text = repr(text)
         console.write('\n'+text+'\n')
