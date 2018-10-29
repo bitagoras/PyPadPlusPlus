@@ -24,7 +24,7 @@ class pyPad:
         for interactive Python development'''
         console.show()
 
-        EnhancedPythonLexer().main()
+        # EnhancedPythonLexer().main()
 
         self.thread = None
         self.lock = True
@@ -40,9 +40,7 @@ class pyPad:
 		# Marker margin
         self.markerWidth = 3
         self.markers = None
-        editor.markerDeleteAll(8)
-        editor.markerDeleteAll(7)
-        editor.markerDeleteAll(6)
+        self.hideMarkers()
         editor.markerDefine(8, Npp.MARKERSYMBOL.LEFTRECT)
         editor.markerDefine(7, Npp.MARKERSYMBOL.RGBAIMAGE)
         editor.markerDefine(6, Npp.MARKERSYMBOL.RGBAIMAGE)
@@ -126,40 +124,44 @@ class pyPad:
         iPos = editor.getCurrentPos()
         iLineStart = editor.lineFromPosition(editor.getSelectionStart())
         iLineEnd = max(iLineStart, editor.lineFromPosition(editor.getSelectionEnd()-1))
-        iStart = self.completeBlockStart(iLineStart)
-        iLineStart = editor.lineFromPosition(iStart)
+        iLineStart, iStart = self.completeBlockStart(iLineStart)
         getEnd = self.completeBlockEnd(iLineEnd)
+        requireMore = True
         iEnd = next(getEnd)
+        if iEnd == -1:
+            self.hideMarkers()
+            return
+        iDocEnd = editor.getLength()-1
         filename = notepad.getCurrentFilename()
         lang = notepad.getLangType()
         if lang == Npp.LANGTYPE.TXT and '.' not in filename:
             notepad.setLangType(Npp.LANGTYPE.PYTHON)
         elif lang != Npp.LANGTYPE.PYTHON: return
 
-        # add more lines until the parser is happy or finds
-        # a syntax error
-        requireMore = True
         err = None
 
         line = editor.getTextRange(iStart, iStart + 4)
         if line.startswith('#%%') or line.startswith('# %%'):
             iMatch = []
-            iDocEnd = editor.getLength()-1
             editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+3, iDocEnd, 1)
             iEnd = iMatch[0] if len(iMatch) else iDocEnd
             block = editor.getTextRange(iStart, iEnd).rstrip()
             err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
-            if requireMore: return
-
-        while requireMore:
-            block = editor.getTextRange(iStart, iEnd).rstrip()
-            err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
-
             if requireMore:
-                iEnd = next(getEnd, -1)
-                if iEnd == -1:
-                    iStart = iEnd = iPos
-                    break
+                self.hideMarkers()
+                return
+
+        else:
+            # add more lines until the parser is happy or finds
+            # a syntax error
+            while requireMore:
+                block = editor.getTextRange(iStart, iEnd).rstrip()
+                err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
+                if requireMore:
+                    iEnd = next(getEnd, -1)
+                    if iEnd == -1:
+                        iStart = iEnd = iPos
+                        break
 
         iLineStart, iLineEnd = editor.lineFromPosition(iStart), editor.lineFromPosition(iEnd)
         self.setMarkers((iLineStart, iLineEnd), block, color='a' if not err else 'r')
@@ -178,6 +180,9 @@ class pyPad:
             if moveCursor:
                 editor.setSelectionStart(iNewPos)
                 editor.setCurrentPos(iNewPos)
+                if iNewPos > iDocEnd and iLineEnd == editor.getLineCount()-1:
+                    print iNewPos, iDocEnd, iLineEnd,  editor.getLineCount(), editor.positionFromLine(iLineEnd), editor.positionFromLine(iLineEnd + 1)
+                    editor.newLine()
                 editor.scrollCaret()
 
             self.lock = True
@@ -222,31 +227,32 @@ class pyPad:
             if not lineRequiresMoreLinesBefore:
                 break
             iLine -= 1
-        return iStart
+        return max(0, iLine), iStart
 
     def completeBlockEnd(self, iLine):
         '''Add following lines that are required to execute
         the selected code, without leaving code that cannot
         be executed seperately in the next step.'''
-        n = editor.getLength()
-        iStartTest = editor.positionFromLine(iLine)
-        iLastWithCode = iEnd = iEndTest = editor.getLineEndPosition(iLine)
-        while iEndTest < n:
+        n = editor.getLineCount()
+        hasCode = False
+        #print "iLine=",iLine
+        while iLine < n:
+            iStartTest = editor.positionFromLine(iLine)
+            iEndTest = editor.getLineEndPosition(iLine)
             lineTest = editor.getTextRange(iStartTest, iEndTest).rstrip()
-            noCodeLine = len(lineTest) == 0 or lineTest.startswith('#')
+            isCodeLine = len(lineTest) > 0 and not lineTest.startswith('#')
             lineBelongsToBlock = len(lineTest)==0 or lineTest.startswith(' ') \
                     or lineTest.startswith('\t') or lineTest.startswith('else:') \
                     or lineTest.startswith('elif') or lineTest.startswith('except:') \
                     or lineTest.startswith('finally:')
-            if not lineBelongsToBlock:
-                yield iLastWithCode
-            if not noCodeLine: iLastWithCode = iEndTest
-            iEnd = iEndTest
+            if isCodeLine:
+                hasCode = True
+            if not lineBelongsToBlock and isCodeLine:
+                yield iEndTest
             iLine += 1
-            iEndTest = editor.getLineEndPosition(iLine)
-            iStartTest = editor.positionFromLine(iLine)
-        yield n
-            
+        #print "iLineEnd=",iLine
+        yield iEndTest if hasCode else -1
+
     def threadValue(self):
         '''Thread of the running code in case the code is
         a value. When finished, the execution markers are
@@ -312,9 +318,7 @@ class pyPad:
         elif color == 'a':
             c = (150,150,150) # color active
         if block or color is None:
-            editor.markerDeleteAll(8)
-            editor.markerDeleteAll(7)
-            editor.markerDeleteAll(6)
+            self.hideMarkers()
             self.markers = False
         if block or color is not None:
             hLine = len(self.fade)
@@ -350,10 +354,13 @@ class pyPad:
         if args['text']:
             id = notepad.getCurrentBufferID()
             if self.markers is not None and self.markers != id and not (self.lock or self.holdMarker):
-                editor.markerDeleteAll(6)
-                editor.markerDeleteAll(7)
-                editor.markerDeleteAll(8)
+                self.hideMarkers()
                 self.markers = id
+
+    def hideMarkers(self):
+        editor.markerDeleteAll(6)
+        editor.markerDeleteAll(7)
+        editor.markerDeleteAll(8)
 
     def onCalltipClick(self, args):
         if self.activeCalltip == 'doc':# and args['position']==0:
