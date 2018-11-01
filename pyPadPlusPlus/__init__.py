@@ -154,12 +154,12 @@ class pyPad:
         err = None
 
         iStart = editor.positionFromLine(iLineStart)
-        iDocEnd = editor.getLength()-1
+        iDocEnd = editor.getLength()
         
         line = editor.getLine(iLineStart).rstrip()
         if line.startswith('#%%') or line.startswith('# %%'):
             iMatch = []
-            editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+4, iDocEnd, 1)
+            editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+4, iDocEnd-1, 1)
             iEnd = iMatch[0]-1 if len(iMatch) else iDocEnd
             iLineEnd = editor.lineFromPosition(iEnd)
             block = editor.getTextRange(iStart, iEnd).rstrip()
@@ -180,7 +180,7 @@ class pyPad:
                     if iEnd == -1:
                         iLineEnd = iLineStart
                         break
-        
+
         self.setMarkers((iLineStart, iLineEnd), block, iMarker=(self.m_active if not err else self.m_error))
 
         if err is not None:
@@ -197,7 +197,7 @@ class pyPad:
             if moveCursor:
                 editor.setSelectionStart(iNewPos)
                 editor.setCurrentPos(iNewPos)
-                if iNewPos > iDocEnd and iLineEnd == editor.getLineCount()-1:
+                if iNewPos >= iDocEnd and iLineEnd == editor.getLineCount()-1:
                     editor.newLine()
                 editor.scrollCaret()
 
