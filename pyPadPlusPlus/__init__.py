@@ -111,15 +111,14 @@ class pyPad:
             hwnd = win32gui.WindowFromPoint((x,y))
             x0,y0,x1,y1 = win32gui.GetWindowRect(hwnd)
             if x0 <= x <= x1 and y0 <= y <= y1 and win32gui.GetParent(hwnd) == win32gui.GetForegroundWindow():
-                p = editor.positionFromPoint(x-x0, y-y0)
-                iStart = editor.getSelectionStart()
-                iEnd = editor.getSelectionEnd()
-                if iStart != iEnd and iStart <= p <= iEnd:
+                pos = editor.positionFromPoint(x-x0, y-y0)
+                iLineClick = editor.lineFromPosition(pos)
+                iLineStart = editor.lineFromPosition(editor.getSelectionStart())
+                iLineEnd = editor.lineFromPosition(editor.getSelectionEnd())
+                if iLineStart <= iLineClick <= iLineEnd:
                     self.execute(moveCursor=False)
-                elif 0 <= p < editor.getLength():
-                    editor.setSelectionStart(p)
-                    editor.setSelectionEnd(p)
-                    self.execute(moveCursor=False)
+                elif 0 <= pos < editor.getLength():
+                    self.execute(moveCursor=False, singleLine=iLineClick)
 
         self.middleButton = middleButton
         if self.timerCount > 10:
@@ -129,14 +128,19 @@ class pyPad:
                     self.outBuffer(result)
         threading.Timer(0.02, self.onTimer).start()
 
-    def execute(self, moveCursor=True):
+    def execute(self, moveCursor=True, singleLine=None):
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
         if self.lock: return
-        iPos = editor.getCurrentPos()
-        
-        iLineStart = editor.lineFromPosition(editor.getSelectionStart())
-        iLineEnd = max(iLineStart, editor.lineFromPosition(editor.getSelectionEnd()-1))
+        iSelStart = editor.getSelectionStart()
+        iSelEnd = editor.getSelectionEnd()
+        selection = iSelStart != iSelEnd
+        if singleLine is None:
+            iPos = editor.getCurrentPos()
+            iLineStart = editor.lineFromPosition(iSelStart)
+            iLineEnd = max(iLineStart, editor.lineFromPosition(iSelEnd-1))
+        else:
+            iLineStart = iLineEnd = singleLine
         getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
         iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
         if isEmpty:
@@ -157,7 +161,7 @@ class pyPad:
         iDocEnd = editor.getLength()
         
         line = editor.getLine(iLineStart).rstrip()
-        if line.startswith('#%%') or line.startswith('# %%'):
+        if not selection and (line.startswith('#%%') or line.startswith('# %%')):
             iMatch = []
             editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+4, iDocEnd-1, 1)
             iEnd = iMatch[0]-1 if len(iMatch) else iDocEnd
@@ -193,8 +197,8 @@ class pyPad:
 
             # Start a thread to execute the code
 
-            iNewPos = max(iPos, editor.positionFromLine(iLineEnd + 1))
             if moveCursor:
+                iNewPos = max(iPos, editor.positionFromLine(iLineEnd + 1))
                 editor.setSelectionStart(iNewPos)
                 editor.setCurrentPos(iNewPos)
                 if iNewPos >= iDocEnd and iLineEnd == editor.getLineCount()-1:
