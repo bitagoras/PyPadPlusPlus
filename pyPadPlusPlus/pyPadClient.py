@@ -70,8 +70,8 @@ class interpreter:
         self.stdOutBuff = PseudoFileOutBuffer(self.buffer)
         self.stdErrBuff = PseudoFileOutBuffer(self.buffer, True)
         self.interp = code.InteractiveInterpreter(globals())
-        sys.stdout=self.stdOutBuff
-        sys.stderr=self.stdErrBuff
+        #sys.stdout=self.stdOutBuff
+        #sys.stderr=self.stdErrBuff
 
     def tryCode(self, iLineStart, filename, block):
         err = None
@@ -81,16 +81,14 @@ class interpreter:
         try:
             code = compile_command('\n' * iLineStart + block, filename, 'eval')
             isValue = True
-            
         except (OverflowError, SyntaxError, ValueError):
             try:
                 code = compile_command('\n' * iLineStart + block + '\n', filename, 'exec')
                 isValue = False
             except (OverflowError, SyntaxError, ValueError):
-                #console.writeError('\n')
                 self.interp.showsyntaxerror(filename)
                 err = self.buffer.read()
-        
+                if not err: err = True
         requireMore = code is None and err is None
         if not requireMore:
             self.code = code

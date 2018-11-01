@@ -28,32 +28,44 @@ class pyPad:
 
         self.thread = None
         self.lock = True
-        self.holdMarker = False
+        self.delayedMarker = False
         self.activeCalltip = None
         editor.grabFocus()
         editor.setTargetStart(0)
+        
         if externalPython:
             self.interp = pyPadHost.interpreter()
         else:
             self.interp = pyPadClient.interpreter()
-
-		# Marker margin
+            
+		# Marker
         self.markerWidth = 3
-        self.markers = None
-        self.hideMarkers()
-        editor.markerDefine(8, Npp.MARKERSYMBOL.LEFTRECT)
-        editor.markerDefine(7, Npp.MARKERSYMBOL.RGBAIMAGE)
-        editor.markerDefine(6, Npp.MARKERSYMBOL.RGBAIMAGE)
         editor.setMarginWidthN(3, self.markerWidth)
-        editor.setMarginMaskN(3, 256+128+64)
-
-        self.fade = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        editor.setMarginMaskN(3, (256+128+64) * (1 + 2**3 + 2**6))
+        fade = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 252, 246, 240, 234, 228, 223,
             217, 211, 205, 199, 193, 188, 182, 176, 170, 164, 159, 153, 147,
             141, 135, 130, 124, 118, 112, 106, 101, 95, 89, 83, 77, 71, 66,
             60, 54, 48, 42, 37, 31, 25]
-
+            
+        self.markers = {}
+        self.m_active, self.m_error, self.m_finish = [6 + 3*i for i in 0,1,2]
+        for iMarker,c in ((self.m_active, (150,150,150)),
+                          (self.m_error,  (255,100,100)),
+                          (self.m_finish, (255,220,0))):
+            rgb = chr(c[0])+chr(c[1])+chr(c[2])
+            rgba = ''.join([(rgb+chr(f))*self.markerWidth for f in fade])
+            rgba_r = ''.join([(rgb+chr(f))*self.markerWidth for f in reversed(fade)])
+            editor.rGBAImageSetWidth(self.markerWidth)
+            editor.rGBAImageSetHeight(len(fade))
+            editor.markerDefine(iMarker, Npp.MARKERSYMBOL.LEFTRECT)
+            editor.markerSetBack(iMarker, c)
+            editor.markerDefineRGBAImage(iMarker+1, rgba)
+            editor.markerDefine(iMarker+1, Npp.MARKERSYMBOL.RGBAIMAGE)
+            editor.markerDefineRGBAImage(iMarker+2, rgba_r)
+            editor.markerDefine(iMarker+2, Npp.MARKERSYMBOL.RGBAIMAGE)
+        
         editor.setMouseDwellTime(300)
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
         editor.callback(self.onCalltipClick, [Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
@@ -122,16 +134,17 @@ class pyPad:
         the current selection. Or execute one marked block.'''
         if self.lock: return
         iPos = editor.getCurrentPos()
+        
         iLineStart = editor.lineFromPosition(editor.getSelectionStart())
         iLineEnd = max(iLineStart, editor.lineFromPosition(editor.getSelectionEnd()-1))
-        iLineStart, iStart = self.completeBlockStart(iLineStart)
-        getEnd = self.completeBlockEnd(iLineEnd)
-        requireMore = True
-        iEnd = next(getEnd)
-        if iEnd == -1:
+        getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
+        iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
+        if isEmpty:
             self.hideMarkers()
             return
-        iDocEnd = editor.getLength()-1
+        iLineStart = self.completeBlockStart(iLineStart, expectMoreLinesBefore)
+            
+        requireMore = True
         filename = notepad.getCurrentFilename()
         lang = notepad.getLangType()
         if lang == Npp.LANGTYPE.TXT and '.' not in filename:
@@ -140,11 +153,15 @@ class pyPad:
 
         err = None
 
-        line = editor.getTextRange(iStart, iStart + 4)
+        iStart = editor.positionFromLine(iLineStart)
+        iDocEnd = editor.getLength()-1
+        
+        line = editor.getLine(iLineStart).rstrip()
         if line.startswith('#%%') or line.startswith('# %%'):
             iMatch = []
-            editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+3, iDocEnd, 1)
-            iEnd = iMatch[0] if len(iMatch) else iDocEnd
+            editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+4, iDocEnd, 1)
+            iEnd = iMatch[0]-1 if len(iMatch) else iDocEnd
+            iLineEnd = editor.lineFromPosition(iEnd)
             block = editor.getTextRange(iStart, iEnd).rstrip()
             err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
             if requireMore:
@@ -155,22 +172,22 @@ class pyPad:
             # add more lines until the parser is happy or finds
             # a syntax error
             while requireMore:
+                iEnd = editor.getLineEndPosition(iLineEnd)
                 block = editor.getTextRange(iStart, iEnd).rstrip()
                 err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
                 if requireMore:
-                    iEnd = next(getEnd, -1)
+                    iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd, -1)
                     if iEnd == -1:
-                        iStart = iEnd = iPos
+                        iLineEnd = iLineStart
                         break
-
-        iLineStart, iLineEnd = editor.lineFromPosition(iStart), editor.lineFromPosition(iEnd)
-        self.setMarkers((iLineStart, iLineEnd), block, color='a' if not err else 'r')
+        
+        self.setMarkers((iLineStart, iLineEnd), block, iMarker=(self.m_active if not err else self.m_error))
 
         if err is not None:
             if moveCursor:
                 editor.setSelectionStart(iPos)
                 editor.scrollCaret()
-            self.outBuffer(err)
+            if err is not True: self.outBuffer(err)
 
         else:
 
@@ -181,7 +198,6 @@ class pyPad:
                 editor.setSelectionStart(iNewPos)
                 editor.setCurrentPos(iNewPos)
                 if iNewPos > iDocEnd and iLineEnd == editor.getLineCount()-1:
-                    print iNewPos, iDocEnd, iLineEnd,  editor.getLineCount(), editor.positionFromLine(iLineEnd), editor.positionFromLine(iLineEnd + 1)
                     editor.newLine()
                 editor.scrollCaret()
 
@@ -192,11 +208,9 @@ class pyPad:
                 self.thread = threading.Thread(name='threadCode', target=self.threadCode, args=())
 
             if not err:
-                self.holdMarker = True
                 self.thread.start()
         if err:
-            self.setMarkers(color='r')
-            self.holdMarker = False
+            self.changeMarkers(iMarker=self.m_error)
             self.lock = False
 
         if not self.timer:
@@ -210,48 +224,55 @@ class pyPad:
         linePart = editor.getTextRange(iStart, iPos - 1)
         return linePart
 
-    def completeBlockStart(self, iLine):
+    def completeBlockStart(self, iLine, expectMoreLines):
         '''Add preceding lines that are required to execute
         the selected code, e.g. the beginning of an indented
         code block.'''
-        lineRequiresMoreLinesBefore = False
-        n = editor.getLength()
+        iFirstCodeLine = iLine
         while iLine >= 0:
-            iStart = editor.positionFromLine(iLine)
-            iEnd = editor.getLineEndPosition(iLine)
-            line = editor.getTextRange(iStart, iEnd).rstrip()
-            lineRequiresMoreLinesBefore = (lineRequiresMoreLinesBefore and len(line)==0) \
-                    or line.startswith(' ') or line.startswith('\t') \
-                    or line.startswith('else:') or line.startswith('elif') \
+            line = editor.getLine(iLine).rstrip()
+            isCodeLine = len(line) > 0 and not line.startswith('#')
+            isDecorator = line.startswith('@')
+            isIndent = line.startswith(' ') or line.startswith('\t')
+            requireMoreLine = isIndent or line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:')
-            if not lineRequiresMoreLinesBefore:
+            satisfied = not requireMoreLine and not expectMoreLines and isCodeLine
+            satisfied = satisfied or (not requireMoreLine and not isCodeLine and not expectMoreLines)
+            if isDecorator:
+                satisfied = False
+            if isCodeLine:
+                iFirstCodeLine = iLine
+                if not isIndent: expectMoreLines = False
+            if satisfied:
                 break
             iLine -= 1
-        return max(0, iLine), iStart
+        return max(0, iFirstCodeLine)
 
-    def completeBlockEnd(self, iLine):
+    def completeBlockEnd(self, iLine, iLineMin, iLineMax, isEmpty=True, expectMoreLinesBefore=False):
         '''Add following lines that are required to execute
         the selected code, without leaving code that cannot
         be executed seperately in the next step.'''
-        n = editor.getLineCount()
-        hasCode = False
-        #print "iLine=",iLine
-        while iLine < n:
-            iStartTest = editor.positionFromLine(iLine)
-            iEndTest = editor.getLineEndPosition(iLine)
-            lineTest = editor.getTextRange(iStartTest, iEndTest).rstrip()
-            isCodeLine = len(lineTest) > 0 and not lineTest.startswith('#')
-            lineBelongsToBlock = len(lineTest)==0 or lineTest.startswith(' ') \
-                    or lineTest.startswith('\t') or lineTest.startswith('else:') \
-                    or lineTest.startswith('elif') or lineTest.startswith('except:') \
-                    or lineTest.startswith('finally:')
+        iLastCodeLine = iLineMin
+        expectMoreLines = False
+        while iLine <= iLineMax:
+            line = editor.getLine(iLine).rstrip()
+            isCodeLine = len(line) > 0 and not line.startswith('#')
+            mightBelongToBlock = not isCodeLine
+            isIndent = line.startswith(' ') or line.startswith('\t')
+            requireMoreLine = line.startswith('else:') or line.startswith('elif') \
+                    or line.startswith('except:') or line.startswith('finally:') \
+                    or line.startswith('@')
+            if requireMoreLine or isIndent: expectMoreLines = True
+            if isEmpty and isIndent: expectMoreLinesBefore = True
+            if isCodeLine: isEmpty = False
+            if isCodeLine and not requireMoreLine: expectMoreLines = False
+            satisfied = not isIndent and isCodeLine and not expectMoreLines and not requireMoreLine
+            if iLine >= iLineMin and satisfied:
+                yield iLastCodeLine, isEmpty, expectMoreLinesBefore
             if isCodeLine:
-                hasCode = True
-            if not lineBelongsToBlock and isCodeLine:
-                yield iEndTest
+                iLastCodeLine = max(iLineMin, iLine)
             iLine += 1
-        #print "iLineEnd=",iLine
-        yield iEndTest if hasCode else -1
+        yield iLastCodeLine, isEmpty, expectMoreLinesBefore
 
     def threadValue(self):
         '''Thread of the running code in case the code is
@@ -259,16 +280,12 @@ class pyPad:
         set to the corresponding color.'''
         err, result = self.interp.evaluate()
         if not err:
-            self.setMarkers(color='f')
+            self.changeMarkers(iMarker=self.m_finish)
             if result: self.stdout(result+'\n')
         else:
-            self.setMarkers(color='r')
+            self.changeMarkers(iMarker=self.m_error)
             self.outBuffer(result)
         self.lock = False
-
-        # wait some seconds until the markers can hide
-        time.sleep(3)
-        self.holdMarker = False
 
     def threadCode(self):
         '''Thread of the running code in case the code is
@@ -276,15 +293,11 @@ class pyPad:
         set to the corresponding color.'''
         err, result = self.interp.execute()
         if not err:
-            self.setMarkers(color='f')
+            self.changeMarkers(iMarker=self.m_finish)
         else:
-            self.setMarkers(color='r')
+            self.changeMarkers(iMarker=self.m_error)
         self.outBuffer(result)
         self.lock = False
-
-        # wait some seconds until the markers can hide
-        time.sleep(3)
-        self.holdMarker = False
 
     def stdout(self, s):
         console.editor.beginUndoAction()
@@ -306,30 +319,11 @@ class pyPad:
         console.editor.endUndoAction()
         console.editor.setReadOnly(0)
 
-    def setMarkers(self, iRange=(0, 0), block=None, color=None):
+    def setMarkers(self, iRange=(0, 0), block=None, iMarker=None):
         '''Set markers at the beginning and end of the executed
         code block, to show the user which part is actually executed
         and if the code is still running or finished or if errors
         occurred.'''
-        if color == 'r':
-            c = (255,100,100) # color error
-        elif color == 'f':
-            c = (255,220,0) # color finished
-        elif color == 'a':
-            c = (150,150,150) # color active
-        if block or color is None:
-            self.hideMarkers()
-            self.markers = False
-        if block or color is not None:
-            hLine = len(self.fade)
-            rgb = chr(c[0])+chr(c[1])+chr(c[2])
-            rgba = ''.join([(rgb+chr(f))*self.markerWidth for f in self.fade])
-            rgba_r = ''.join([(rgb+chr(f))*self.markerWidth for f in reversed(self.fade)])
-            editor.rGBAImageSetWidth(self.markerWidth)
-            editor.rGBAImageSetHeight(hLine)
-            editor.markerDefineRGBAImage(6, rgba)
-            editor.markerDefineRGBAImage(7, rgba_r)
-            editor.markerSetBack(8, c)
         if block:
             iLineStart, iLineEnd = iRange
             lineHasCode = [len(line) > 0 and not (line.isspace() or line.startswith('#')) for line in block.splitlines()]
@@ -337,36 +331,59 @@ class pyPad:
             firstMarker = iLineStart + linesWithCode[0]
             lastMarker = iLineStart + linesWithCode[-1]
             nExtraLines = lastMarker - firstMarker + 1
+            markerIDs = []
+            id = notepad.getCurrentBufferID()
+            self.hideMarkers(id)
             if nExtraLines <= 4:
                 for iLine in range(nExtraLines):
-                    editor.markerAdd(firstMarker+iLine, 8)
+                    markerIDs.append(editor.markerAdd(firstMarker+iLine, iMarker))
             else:
-                editor.markerAdd(firstMarker, 8)
-                editor.markerAdd(firstMarker+1, 6)
-                editor.markerAdd(lastMarker-1, 7)
-                editor.markerAdd(lastMarker, 8)
-            self.markers = True
+                markerIDs.append(editor.markerAdd(firstMarker, iMarker))
+                markerIDs.append(editor.markerAdd(firstMarker+1, iMarker+1))
+                markerIDs.append(editor.markerAdd(lastMarker-1, iMarker+2))
+                markerIDs.append(editor.markerAdd(lastMarker, iMarker))
+            self.markers[id] = markerIDs
 
+    def changeMarkers(self, iMarker):
+        id = notepad.getCurrentBufferID()
+        markerIDs = []
+        iLines = []
+        markerLong = (0, 1, 2, 0)
+        markerShort = (0, 0, 0, 0)
+        for i in self.markers[id]:
+            iLines.append(editor.markerLineFromHandle(i))
+            editor.markerDeleteHandle(i)
+        if iLines[-1] - iLines[0] < 4:
+            markerTypes = markerShort
+        else:
+            markerTypes = markerLong
+        for i,m in enumerate(self.markers[id]):
+            markerIDs.append(editor.markerAdd(iLines[i], iMarker+markerTypes[i]))
+            editor.markerDeleteHandle(m)
+        self.markers[id] = markerIDs
+            
     def textModified(self, args):
         '''When the text is modified the execution markers
         will be hidden, except when the code is running or
         when the color just has changed in the last few seconds.'''
         if args['text']:
             id = notepad.getCurrentBufferID()
-            if self.markers is not None and self.markers != id and not (self.lock or self.holdMarker):
-                self.hideMarkers()
-                self.markers = id
+            if self.markers.get(id, None) is not None and not self.lock and len(self.markers[id]) > 0:
+                iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
+                line0 = editor.markerLineFromHandle(self.markers[id][0])
+                line1 = editor.markerLineFromHandle(self.markers[id][-1])
+                if line0 <= iCurrentLine <= line1:
+                    self.hideMarkers(id)
 
-    def hideMarkers(self):
-        editor.markerDeleteAll(6)
-        editor.markerDeleteAll(7)
-        editor.markerDeleteAll(8)
+    def hideMarkers(self, id=None):
+        if id is None: id = notepad.getCurrentBufferID()
+        markers = self.markers.get(id,[])
+        while markers:
+            editor.markerDeleteHandle(markers.pop())
 
     def onCalltipClick(self, args):
         if self.activeCalltip == 'doc':# and args['position']==0:
-            #self.stdout(str(args))
             var, calltip = self.interp.getFullCallTip()
-            #if len(var) > 50: var = var[:50] + '...'
             head = '='*(40 - len(var)//2 - 3) + ' Calltip: ' + var + ' ' + '='*(40 - len(var)//2 - 3)
             foot = '='*len(head)
             self.stdout('\n' + head + '\n' + ''.join(calltip) + '\n' + foot + '\n')
