@@ -19,6 +19,7 @@ except:
     sys.stdout.outp=PseudoFileOut2(Npp.console.write)
     import pyPadPlusPlus
     pypad = pyPadPlusPlus.pyPad(externalPython)
+    Npp.pypad = pypad
 
 pypad.execute(moveCursor=False)
 

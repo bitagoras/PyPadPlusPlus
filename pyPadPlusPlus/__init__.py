@@ -17,6 +17,7 @@ import textwrap
 import pyPadHost
 import pyPadClient
 import win32api, win32con, win32gui
+from math import sin, pi
 
 class pyPad:
     def __init__(self, externalPython=None):
@@ -27,45 +28,30 @@ class pyPad:
         # EnhancedPythonLexer().main()
 
         self.thread = None
+        self.threadMarker = None
         self.lock = True
         self.delayedMarker = False
         self.activeCalltip = None
         editor.grabFocus()
         editor.setTargetStart(0)
-        
+        self.specialMarkers = None
+        self.bufferAction = {}
+
         if externalPython:
             self.interp = pyPadHost.interpreter()
         else:
             self.interp = pyPadClient.interpreter()
-            
+
 		# Marker
         self.markerWidth = 3
         editor.setMarginWidthN(3, self.markerWidth)
         editor.setMarginMaskN(3, (256+128+64) * (1 + 2**3 + 2**6))
-        fade = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 255, 255, 255, 255, 255, 252, 246, 240, 234, 228, 223,
-            217, 211, 205, 199, 193, 188, 182, 176, 170, 164, 159, 153, 147,
-            141, 135, 130, 124, 118, 112, 106, 101, 95, 89, 83, 77, 71, 66,
-            60, 54, 48, 42, 37, 31, 25]
-            
         self.markers = {}
         self.m_active, self.m_error, self.m_finish = [6 + 3*i for i in 0,1,2]
-        for iMarker,c in ((self.m_active, (150,150,150)),
-                          (self.m_error,  (255,100,100)),
-                          (self.m_finish, (255,220,0))):
-            rgb = chr(c[0])+chr(c[1])+chr(c[2])
-            rgba = ''.join([(rgb+chr(f))*self.markerWidth for f in fade])
-            rgba_r = ''.join([(rgb+chr(f))*self.markerWidth for f in reversed(fade)])
-            editor.rGBAImageSetWidth(self.markerWidth)
-            editor.rGBAImageSetHeight(len(fade))
-            editor.markerDefine(iMarker, Npp.MARKERSYMBOL.LEFTRECT)
-            editor.markerSetBack(iMarker, c)
-            editor.markerDefineRGBAImage(iMarker+1, rgba)
-            editor.markerDefine(iMarker+1, Npp.MARKERSYMBOL.RGBAIMAGE)
-            editor.markerDefineRGBAImage(iMarker+2, rgba_r)
-            editor.markerDefine(iMarker+2, Npp.MARKERSYMBOL.RGBAIMAGE)
-        
+        self.preCalculateMarkers()
+        for iMarker in self.m_active, self.m_error, self.m_finish:
+            self.drawMarker(iMarker)
+
         editor.setMouseDwellTime(300)
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
         editor.callback(self.onCalltipClick, [Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
@@ -75,6 +61,8 @@ class pyPad:
         editor.callback(self.onMouseDwell, [Npp.SCINTILLANOTIFICATION.DWELLSTART])
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
         editor.callback(self.textModified, [Npp.SCINTILLANOTIFICATION.MODIFIED])
+        notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
+        notepad.callback(self.onBufferActivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
 
         editor.callTipSetBack((255,255,225))
         editor.autoCSetSeparator(ord('\t'))
@@ -101,6 +89,7 @@ class pyPad:
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CHARADDED])
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.DWELLSTART])
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
+        notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
 
     def onTimer(self):
         self.timer = True
@@ -132,6 +121,8 @@ class pyPad:
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
         if self.lock: return
+        self.lock = True
+        bufferID = notepad.getCurrentBufferID()                        
         iSelStart = editor.getSelectionStart()
         iSelEnd = editor.getSelectionEnd()
         selection = iSelStart != iSelEnd
@@ -144,22 +135,25 @@ class pyPad:
         getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
         iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
         if isEmpty:
-            self.hideMarkers()
+            self.hideMarkers(bufferID)
+            self.lock = False
             return
         iLineStart = self.completeBlockStart(iLineStart, expectMoreLinesBefore)
-            
+
         requireMore = True
         filename = notepad.getCurrentFilename()
         lang = notepad.getLangType()
         if lang == Npp.LANGTYPE.TXT and '.' not in filename:
             notepad.setLangType(Npp.LANGTYPE.PYTHON)
-        elif lang != Npp.LANGTYPE.PYTHON: return
+        elif lang != Npp.LANGTYPE.PYTHON:
+            self.lock = False
+            return
 
         err = None
 
         iStart = editor.positionFromLine(iLineStart)
         iDocEnd = editor.getLength()
-        
+
         line = editor.getLine(iLineStart).rstrip()
         if not selection and (line.startswith('#%%') or line.startswith('# %%')):
             iMatch = []
@@ -169,7 +163,8 @@ class pyPad:
             block = editor.getTextRange(iStart, iEnd).rstrip()
             err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
             if requireMore:
-                self.hideMarkers()
+                self.hideMarkers(bufferID)
+                self.lock = False
                 return
 
         else:
@@ -184,8 +179,8 @@ class pyPad:
                     if iEnd == -1:
                         iLineEnd = iLineStart
                         break
-
-        self.setMarkers((iLineStart, iLineEnd), block, iMarker=(self.m_active if not err else self.m_error))
+                        
+        self.setMarkers(iLineStart, iLineEnd, block, iMarker=(self.m_active if not err else self.m_error), bufferID=bufferID)
 
         if err is not None:
             if moveCursor:
@@ -204,17 +199,16 @@ class pyPad:
                 if iNewPos >= iDocEnd and iLineEnd == editor.getLineCount()-1:
                     editor.newLine()
                 editor.scrollCaret()
-
-            self.lock = True
+                
             if isValue:
-                self.thread = threading.Thread(name='threadValue', target=self.threadValue, args=())
+                self.thread = threading.Thread(name='threadValue', target=self.threadValue, args=(bufferID,))
             else:
-                self.thread = threading.Thread(name='threadCode', target=self.threadCode, args=())
+                self.thread = threading.Thread(name='threadCode', target=self.threadCode, args=(bufferID,))
 
             if not err:
                 self.thread.start()
         if err:
-            self.changeMarkers(iMarker=self.m_error)
+            self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
             self.lock = False
 
         if not self.timer:
@@ -278,30 +272,150 @@ class pyPad:
             iLine += 1
         yield iLastCodeLine, isEmpty, expectMoreLinesBefore
 
-    def threadValue(self):
+    def threadValue(self, bufferID):
         '''Thread of the running code in case the code is
         a value. When finished, the execution markers are
         set to the corresponding color.'''
         err, result = self.interp.evaluate()
         if not err:
-            self.changeMarkers(iMarker=self.m_finish)
+            self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
             if result: self.stdout(result+'\n')
         else:
-            self.changeMarkers(iMarker=self.m_error)
+            self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
             self.outBuffer(result)
         self.lock = False
 
-    def threadCode(self):
+    def threadCode(self, bufferID):
         '''Thread of the running code in case the code is
         not a value. When finished, the execution markers are
         set to the corresponding color.'''
         err, result = self.interp.execute()
         if not err:
-            self.changeMarkers(iMarker=self.m_finish)
+            self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
         else:
-            self.changeMarkers(iMarker=self.m_error)
+            self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
         self.outBuffer(result)
         self.lock = False
+
+    def preCalculateMarkers(self):
+        if self.specialMarkers is None:
+            self.specialMarkers = {}
+            fade = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+                255, 255, 255, 255, 255, 255, 255, 252, 246, 240, 234, 228, 223,
+                217, 211, 205, 199, 193, 188, 182, 176, 170, 164, 159, 153, 147,
+                141, 135, 130, 124, 118, 112, 106, 101, 95, 89, 83, 77, 71, 66,
+                60, 54, 48, 42, 37, 31, 25]
+            self.markerHeight = len(fade)
+
+            # pre-calculate animated "active" marker
+            animation = []
+            for iCycle in range(10):
+                n = len(fade)
+                nh = n//2
+                rgba = []
+                rgba_r = []
+                c1 = 190, 190, 190 # basic color
+                c2 = 110, 110, 110 # second color
+                for iFade,f in enumerate(fade):
+                    x = min(0, -(iFade - nh))
+                    a = sin(pi*(2.5*(x / float(n))**2 - iCycle / 10.))**4
+                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2]) + chr(f)
+                    rgba.append(rgb*self.markerWidth)
+                    x = -min(0, (iFade - nh))
+                    a = sin(pi*(2.5*(x / float(n))**2 + iCycle / 10.))**4
+                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])  + chr(fade[n-1-iFade])
+                    rgba_r.append(rgb*self.markerWidth)
+                rgb = tuple([(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])
+                rgba = ''.join(rgba)
+                rgba_r = ''.join(rgba_r)
+                animation.append((rgb, rgba, rgba_r))
+            self.specialMarkers[self.m_active] = animation
+
+            # pre-calculate marker for "finish" and "error".
+            for iMarker, c in ((self.m_finish, (255,220,0)),
+                    (self.m_error, (255,100,100))):
+                rgb = chr(c[0])+chr(c[1])+chr(c[2])
+                rgba = ''.join([(rgb+chr(f))*self.markerWidth for f in fade])
+                rgba_r = ''.join([(rgb+chr(f))*self.markerWidth for f in reversed(fade)])
+                rgb = c
+                self.specialMarkers[iMarker] = rgb, rgba, rgba_r
+
+    def drawMarker(self, iMarker, cycle=0):
+        # load special marker RGBA images
+        if iMarker == self.m_active:
+            rgb, rgba, rgba_r = self.specialMarkers[iMarker][cycle]
+        else:
+            rgb, rgba, rgba_r = self.specialMarkers[iMarker]
+
+        editor.rGBAImageSetWidth(self.markerWidth)
+        editor.rGBAImageSetHeight(self.markerHeight)
+        editor.markerDefine(iMarker, Npp.MARKERSYMBOL.LEFTRECT)
+        editor.markerSetBack(iMarker, rgb)
+        editor.markerDefineRGBAImage(iMarker+1, rgba)
+        editor.markerDefine(iMarker+1, Npp.MARKERSYMBOL.RGBAIMAGE)
+        editor.markerDefineRGBAImage(iMarker+2, rgba_r)
+        editor.markerDefine(iMarker+2, Npp.MARKERSYMBOL.RGBAIMAGE)
+
+    def setMarkers(self, iLineStart, iLineEnd, block=None, iMarker=None, bufferID=None, startAnimation=True):
+        '''Set markers at the beginning and end of the executed
+        code block, to show the user which part is actually executed
+        and if the code is still running or finished or if errors
+        occurred.'''
+        if block:
+            lineHasCode = [len(line) > 0 and not (line.isspace() or line.startswith('#')) for line in block.splitlines()]
+            linesWithCode = [i for i, c in enumerate(lineHasCode) if c]
+            iLineEnd = iLineStart + linesWithCode[-1]
+            iLineStart = iLineStart + linesWithCode[0]
+        nMarkedLines = iLineEnd - iLineStart + 1
+        markerIDs = []
+        if bufferID is None:
+            bufferID = notepad.getCurrentBufferID()
+        self.hideMarkers(bufferID)
+        if nMarkedLines <= 4:
+            for iLine in range(nMarkedLines):
+                markerIDs.append(editor.markerAdd(iLineStart+iLine, iMarker))
+        else:
+            markerIDs.append(editor.markerAdd(iLineStart, iMarker))
+            markerIDs.append(editor.markerAdd(iLineStart+1, iMarker+1))
+            markerIDs.append(editor.markerAdd(iLineEnd, iMarker))
+            markerIDs.append(editor.markerAdd(iLineEnd-1, iMarker+2))
+        self.markers[bufferID] = markerIDs
+        if startAnimation and iMarker == self.m_active:
+            self.onMarkerTimer(init=True)
+
+    def onBufferActivated(self, args):
+        bufferID = args["bufferID"]
+        if bufferID in self.bufferAction:
+            iMarker = self.bufferAction.pop(bufferID)
+            self.changeMarkers(iMarker, bufferID)
+            
+    def onMarkerTimer(self, init=False):
+        if self.lock:
+            if init:
+                self.markerCycle = 0
+            else:
+                self.markerCycle = (self.markerCycle + 1) % 10
+                self.drawMarker(self.m_active, cycle=self.markerCycle)
+            self.threadMarker = threading.Timer(0.1, self.onMarkerTimer)
+            self.threadMarker.start()
+        else:
+            self.drawMarker(self.m_active)
+            self.threadMarker = None
+
+    def changeMarkers(self, iMarker, bufferID=None):
+        if bufferID != notepad.getCurrentBufferID():
+            self.bufferAction[bufferID] = iMarker
+            return
+        iLines = []
+        for i in self.markers[bufferID]:
+            iLine = editor.markerLineFromHandle(i)
+            #if iLine == -1:
+            #    notepad.activateBufferID(bufferID)
+            #    iLine = editor.markerLineFromHandle(i)
+            iLines.append(iLine)
+        if iLines:
+            self.setMarkers(min(iLines), max(iLines), iMarker=iMarker, bufferID=bufferID)
 
     def stdout(self, s):
         console.editor.beginUndoAction()
@@ -323,65 +437,33 @@ class pyPad:
         console.editor.endUndoAction()
         console.editor.setReadOnly(0)
 
-    def setMarkers(self, iRange=(0, 0), block=None, iMarker=None):
-        '''Set markers at the beginning and end of the executed
-        code block, to show the user which part is actually executed
-        and if the code is still running or finished or if errors
-        occurred.'''
-        if block:
-            iLineStart, iLineEnd = iRange
-            lineHasCode = [len(line) > 0 and not (line.isspace() or line.startswith('#')) for line in block.splitlines()]
-            linesWithCode = [i for i, c in enumerate(lineHasCode) if c]
-            firstMarker = iLineStart + linesWithCode[0]
-            lastMarker = iLineStart + linesWithCode[-1]
-            nExtraLines = lastMarker - firstMarker + 1
-            markerIDs = []
-            id = notepad.getCurrentBufferID()
-            self.hideMarkers(id)
-            if nExtraLines <= 4:
-                for iLine in range(nExtraLines):
-                    markerIDs.append(editor.markerAdd(firstMarker+iLine, iMarker))
-            else:
-                markerIDs.append(editor.markerAdd(firstMarker, iMarker))
-                markerIDs.append(editor.markerAdd(firstMarker+1, iMarker+1))
-                markerIDs.append(editor.markerAdd(lastMarker-1, iMarker+2))
-                markerIDs.append(editor.markerAdd(lastMarker, iMarker))
-            self.markers[id] = markerIDs
-
-    def changeMarkers(self, iMarker):
-        id = notepad.getCurrentBufferID()
-        markerIDs = []
-        iLines = []
-        markerLong = (0, 1, 2, 0)
-        markerShort = (0, 0, 0, 0)
-        for i in self.markers[id]:
-            iLines.append(editor.markerLineFromHandle(i))
-            editor.markerDeleteHandle(i)
-        if iLines[-1] - iLines[0] < 4:
-            markerTypes = markerShort
-        else:
-            markerTypes = markerLong
-        for i,m in enumerate(self.markers[id]):
-            markerIDs.append(editor.markerAdd(iLines[i], iMarker+markerTypes[i]))
-            editor.markerDeleteHandle(m)
-        self.markers[id] = markerIDs
-            
     def textModified(self, args):
         '''When the text is modified the execution markers
         will be hidden, except when the code is running or
         when the color just has changed in the last few seconds.'''
-        if args['text']:
-            id = notepad.getCurrentBufferID()
-            if self.markers.get(id, None) is not None and not self.lock and len(self.markers[id]) > 0:
+        #if args['text'] != '':
+        if args['linesAdded'] != 0:
+            bufferID = notepad.getCurrentBufferID()
+            if self.markers.get(bufferID, None) is not None and not self.lock and len(self.markers[bufferID]) > 0:
                 iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
-                line0 = editor.markerLineFromHandle(self.markers[id][0])
-                line1 = editor.markerLineFromHandle(self.markers[id][-1])
-                if line0 <= iCurrentLine <= line1:
-                    self.hideMarkers(id)
+                iLines = []
+                for i in self.markers[bufferID]:
+                    iLine = editor.markerLineFromHandle(i)
+                    iLines.append(iLine)
+                if min(iLines) <= iCurrentLine <= max(iLines):
+                    self.hideMarkers(bufferID)
+            if self.markers.get(bufferID, None) is not None and self.lock and len(self.markers[bufferID]) > 0:
+                iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
+                iLines = []
+                for i in self.markers[bufferID]:
+                    iLine = editor.markerLineFromHandle(i)
+                    iLines.append(iLine)
+                if min(iLines) <= iCurrentLine <= max(iLines):
+                    self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
 
-    def hideMarkers(self, id=None):
-        if id is None: id = notepad.getCurrentBufferID()
-        markers = self.markers.get(id,[])
+    def hideMarkers(self, bufferID=None):
+        if bufferID is None: bufferID = notepad.getCurrentBufferID()
+        markers = self.markers.get(bufferID,[])
         while markers:
             editor.markerDeleteHandle(markers.pop())
 
