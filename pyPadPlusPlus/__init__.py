@@ -35,7 +35,8 @@ class pyPad:
         editor.grabFocus()
         editor.setTargetStart(0)
         self.specialMarkers = None
-        self.bufferAction = {}
+        self.bufferMarkerAction = {}
+        self.bufferPathAction = {}
 
         if externalPython:
             self.interp = pyPadHost.interpreter()
@@ -81,6 +82,7 @@ class pyPad:
         filename = notepad.getCurrentFilename()
         path = os.path.split(filename)[0]
         self.interp.tryCode(0, 'none', 'import os; os.chdir("'+path+'")')
+        self.interp.execute()
         self.lock = False
 
     def __del__(self):
@@ -91,6 +93,12 @@ class pyPad:
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
         notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
 
+    def onBufferActivated(self, args):
+        bufferID = args["bufferID"]
+        if bufferID in self.bufferMarkerAction:
+            iMarker = self.bufferMarkerAction.pop(bufferID)
+            self.changeMarkers(iMarker, bufferID)
+            
     def onTimer(self):
         self.timer = True
         self.timerCount += 1
@@ -384,12 +392,6 @@ class pyPad:
         if startAnimation and iMarker == self.m_active:
             self.onMarkerTimer(init=True)
 
-    def onBufferActivated(self, args):
-        bufferID = args["bufferID"]
-        if bufferID in self.bufferAction:
-            iMarker = self.bufferAction.pop(bufferID)
-            self.changeMarkers(iMarker, bufferID)
-            
     def onMarkerTimer(self, init=False):
         if self.lock:
             if init:
@@ -405,7 +407,7 @@ class pyPad:
 
     def changeMarkers(self, iMarker, bufferID=None):
         if bufferID != notepad.getCurrentBufferID():
-            self.bufferAction[bufferID] = iMarker
+            self.bufferMarkerAction[bufferID] = iMarker
             return
         iLines = []
         for i in self.markers[bufferID]:
