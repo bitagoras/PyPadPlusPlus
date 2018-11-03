@@ -107,7 +107,7 @@ class pyPad:
                 if iLineStart <= iLineClick <= iLineEnd:
                     self.execute(moveCursor=False)
                 elif 0 <= pos < editor.getLength():
-                    self.execute(moveCursor=False, singleLine=iLineClick)
+                    self.execute(moveCursor=False, nonSelectedLine=iLineClick)
 
         self.middleButton = middleButton
         if self.timerCount > 10:
@@ -117,21 +117,21 @@ class pyPad:
                     self.outBuffer(result)
         threading.Timer(0.02, self.onTimer).start()
 
-    def execute(self, moveCursor=True, singleLine=None):
+    def execute(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
         if self.lock: return
         self.lock = True
         bufferID = notepad.getCurrentBufferID()                        
-        iSelStart = editor.getSelectionStart()
-        iSelEnd = editor.getSelectionEnd()
-        selection = iSelStart != iSelEnd
-        if singleLine is None:
+        if nonSelectedLine is None:
+            iSelStart = editor.getSelectionStart()
+            iSelEnd = editor.getSelectionEnd()
             iPos = editor.getCurrentPos()
             iLineStart = editor.lineFromPosition(iSelStart)
             iLineEnd = max(iLineStart, editor.lineFromPosition(iSelEnd-1))
         else:
-            iLineStart = iLineEnd = singleLine
+            iLineStart = iLineEnd = iSelStart = iSelEnd = nonSelectedLine
+        selection = iSelStart != iSelEnd
         getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
         iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
         if isEmpty:
@@ -315,15 +315,15 @@ class pyPad:
                 nh = n//2
                 rgba = []
                 rgba_r = []
-                c1 = 190, 190, 190 # basic color
-                c2 = 110, 110, 110 # second color
+                c2 = 110, 110, 110 # basic color
+                c1 = 170, 175, 190 # second color
                 for iFade,f in enumerate(fade):
                     x = min(0, -(iFade - nh))
-                    a = sin(pi*(2.5*(x / float(n))**2 - iCycle / 10.))**4
+                    a = sin(pi*(3*(x / float(n))**2 - iCycle / 10.))**4
                     rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2]) + chr(f)
                     rgba.append(rgb*self.markerWidth)
                     x = -min(0, (iFade - nh))
-                    a = sin(pi*(2.5*(x / float(n))**2 + iCycle / 10.))**4
+                    a = sin(pi*(3*(x / float(n))**2 + iCycle / 10.))**4
                     rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])  + chr(fade[n-1-iFade])
                     rgba_r.append(rgb*self.markerWidth)
                 rgb = tuple([(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])
