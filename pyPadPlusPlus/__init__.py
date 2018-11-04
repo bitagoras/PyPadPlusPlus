@@ -19,12 +19,23 @@ import pyPadClient
 import win32api, win32con, win32gui
 from math import sin, pi
 
+
+
+class PseudoFileOut:
+    def __init__(self, write):
+        self.write = write
+    def write(self, s): pass
+
 class pyPad:
     def __init__(self, externalPython=None):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
 
+        sys.stdout=PseudoFileOut(Npp.console.write)
+        sys.stderr=PseudoFileOut(Npp.console.writeError)
+        sys.stdout.outp=PseudoFileOut(Npp.console.write)
+        
         # EnhancedPythonLexer().main()
 
         self.thread = None
@@ -75,16 +86,17 @@ class pyPad:
         console.clear()
         console.editor.setReadOnly(0)
 
-        self.timer = False
         self.timerCount = 0
         self.middleButton = 0
 
         filename = notepad.getCurrentFilename()
         path = os.path.split(filename)[0]
-        self.interp.tryCode(0, 'none', 'import os; os.chdir("'+path+'")')
+        self.interp.tryCode(0, 'none', 'import os; os.chdir('+repr(path)+')')
         self.interp.execute()
         self.lock = False
-
+        
+        self.onTimer()  # start periodic timer to check output of process
+        
     def __del__(self):
         '''Clear call backs on exit.'''
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
@@ -100,7 +112,6 @@ class pyPad:
             self.changeMarkers(iMarker, bufferID)
             
     def onTimer(self):
-        self.timer = True
         self.timerCount += 1
         middleButton = win32api.GetKeyState(win32con.VK_MBUTTON)
         if middleButton < 0 and self.middleButton >= 0:
@@ -219,9 +230,6 @@ class pyPad:
             self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
             self.lock = False
 
-        if not self.timer:
-            self.onTimer()  # start periodic timer to check output of process
-
     def getUncompleteLine(self, iPos):
         '''get the whole expression with the context of a
         variable that is required to evaluate the variable'''
@@ -263,7 +271,6 @@ class pyPad:
         while iLine <= iLineMax:
             line = editor.getLine(iLine).rstrip()
             isCodeLine = len(line) > 0 and not line.startswith('#')
-            mightBelongToBlock = not isCodeLine
             isIndent = line.startswith(' ') or line.startswith('\t')
             requireMoreLine = line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:') \
@@ -323,15 +330,15 @@ class pyPad:
                 nh = n//2
                 rgba = []
                 rgba_r = []
-                c2 = 110, 110, 110 # basic color
-                c1 = 170, 175, 190 # second color
+                c1 = 110, 110, 110 # basic color
+                c2 = 170, 175, 200 # second color
                 for iFade,f in enumerate(fade):
                     x = min(0, -(iFade - nh))
-                    a = sin(pi*(3*(x / float(n))**2 - iCycle / 10.))**4
+                    a = sin(pi*(4*(x / float(n))**2 - iCycle / 10.))**2
                     rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2]) + chr(f)
                     rgba.append(rgb*self.markerWidth)
                     x = -min(0, (iFade - nh))
-                    a = sin(pi*(3*(x / float(n))**2 + iCycle / 10.))**4
+                    a = sin(pi*(4*(x / float(n))**2 + iCycle / 10.))**2
                     rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])  + chr(fade[n-1-iFade])
                     rgba_r.append(rgb*self.markerWidth)
                 rgb = tuple([(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])
@@ -582,8 +589,6 @@ class EnhancedPythonLexer(object):
 
     @staticmethod
     def paint_it(indicator, pos, length):
-        current_line = editor.lineFromPosition(pos)
-        line_start_position = editor.positionFromLine(current_line)
         editor.setIndicatorCurrent(indicator)
         editor.indicatorFillRange(pos,length)
 
