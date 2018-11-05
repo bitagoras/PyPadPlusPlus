@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "0.3"
+__version__ = "0.4"
 
 import Npp
 from Npp import editor, console, notepad
@@ -19,40 +19,44 @@ import pyPadClient
 import win32api, win32con, win32gui
 from math import sin, pi
 
+# Set pythonPath to None for internal Python from Python Script Plugin of Notepad++
+# For external python environment specify path to file pythonw.exe.
 
+pythonPath = 'C:\\prog\\Anaconda2\\pythonw.exe'
+#pythonPath = None
 
 class PseudoFileOut:
     def __init__(self, write):
         self.write = write
     def write(self, s): pass
-
 class pyPad:
-    def __init__(self, externalPython=None):
+    def __init__(self, externalPython=pythonPath):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
+        editor.grabFocus()
 
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
         sys.stdout.outp=PseudoFileOut(Npp.console.write)
-        
-        # EnhancedPythonLexer().main()
+
+        if externalPython:
+            # start syntax highligter
+            EnhancedPythonLexer().main()
+            self.interp = pyPadHost.interpreter(externalPython)
+        else:
+            # syntax highligter could slow down notepad++ in this mode
+            self.interp = pyPadClient.interpreter()
 
         self.thread = None
         self.threadMarker = None
         self.lock = True
         self.delayedMarker = False
         self.activeCalltip = None
-        editor.grabFocus()
         editor.setTargetStart(0)
         self.specialMarkers = None
         self.bufferMarkerAction = {}
         self.bufferPathAction = {}
-
-        if externalPython:
-            self.interp = pyPadHost.interpreter()
-        else:
-            self.interp = pyPadClient.interpreter()
 
 		# Marker
         self.markerWidth = 3
@@ -91,8 +95,9 @@ class pyPad:
 
         filename = notepad.getCurrentFilename()
         path = os.path.split(filename)[0]
-        self.interp.tryCode(0, 'none', 'import os; os.chdir('+repr(path)+')')
-        self.interp.execute()
+        if path:
+            self.interp.tryCode(0, 'none', 'import os; os.chdir('+repr(path)+')')
+            self.interp.execute()
         self.lock = False
         
         self.onTimer()  # start periodic timer to check output of process
@@ -192,7 +197,9 @@ class pyPad:
             while requireMore:
                 iEnd = editor.getLineEndPosition(iLineEnd)
                 block = editor.getTextRange(iStart, iEnd).rstrip()
-                err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
+                if block:
+                    err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
+                else: err, requireMore, isValue = None, True, False
                 if requireMore:
                     iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd, -1)
                     if iEnd == -1:
@@ -245,7 +252,7 @@ class pyPad:
         iFirstCodeLine = iLine
         while iLine >= 0:
             line = editor.getLine(iLine).rstrip()
-            isCodeLine = len(line) > 0 and not line.startswith('#')
+            isCodeLine = len(line) > 0 and not line.lstrip().startswith('#')
             isDecorator = line.startswith('@')
             isIndent = line.startswith(' ') or line.startswith('\t')
             requireMoreLine = isIndent or line.startswith('else:') or line.startswith('elif') \
@@ -273,8 +280,7 @@ class pyPad:
             isCodeLine = len(line) > 0 and not line.startswith('#')
             isIndent = line.startswith(' ') or line.startswith('\t')
             requireMoreLine = line.startswith('else:') or line.startswith('elif') \
-                    or line.startswith('except:') or line.startswith('finally:') \
-                    or line.startswith('@')
+                    or line.startswith('except:') or line.startswith('finally:')
             if requireMoreLine or isIndent: expectMoreLines = True
             if isEmpty and isIndent: expectMoreLinesBefore = True
             if isCodeLine: isEmpty = False
@@ -589,6 +595,7 @@ class EnhancedPythonLexer(object):
 
     @staticmethod
     def paint_it(indicator, pos, length):
+        current_line = editor.lineFromPosition(pos)
         editor.setIndicatorCurrent(indicator)
         editor.indicatorFillRange(pos,length)
 
@@ -620,9 +627,7 @@ class EnhancedPythonLexer(object):
     def on_langchanged(self,args):
         self.set_lexer_doc(True if self.get_lexer_name() == self.lexer_name else False)
 
-    # customize, if needed
     def main(self):
-        # basically what is returned by notepad.getLanguageName(notepad.getLangType())
         self.lexer_name = 'Python'
         indicator = 0
         editor.indicSetFore(indicator, (80, 160, 120))

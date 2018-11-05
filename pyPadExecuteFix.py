@@ -8,6 +8,5 @@ try:
     Npp.pypad.execute(moveCursor=False)
 except:
     import Npp, pyPadPlusPlus
-    # Use of an external Python interpreter is not implemented yet.
-    Npp.pypad = pyPadPlusPlus.pyPad(externalPython=False)
+    Npp.pypad = pyPadPlusPlus.pyPad()
     Npp.pypad.execute(moveCursor=False)

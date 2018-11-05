@@ -2,19 +2,22 @@
 # PyPadPlusPlus: Module running in Python subprocess
 #
 
-import sys, code
+activateMatplotlibEventHandler = True
+
+import sys, code, time
 import introspect  # Module for code introspection from the wxPython project
 from codeop import compile_command
-import threading
 import traceback
 import textwrap
-#import Queue
+import threading, Queue
 try:
    import cPickle as pickle
 except:
    import pickle
-   
-from functools import wraps
+if activateMatplotlibEventHandler:
+    import matplotlib
+    from matplotlib import _pylab_helpers
+    from matplotlib.rcsetup import interactive_bk as _interactive_bk
 
 class bufferOut:
     def __init__(self):
@@ -38,29 +41,23 @@ class PseudoFileOutBuffer:
             self.write = self.writeStdErr
         else:
             self.write = self.writeStdOut
-    
+
     def writeStdOut(self, s):
-        #console.write('buff:'+s+'\n')
         self.buffer.write(s)
-        
+
     def writeStdErr(self, s):
-        #console.writeError('buff:'+s+'\n')
         self.buffer.write(s, True)
-        
+
     def write(self, s): pass
 
-def withPipe(func):
-    """ Decorate a function to pickle the input and output
-    """
-    @wraps(func)
-    def pickledFunc(self, *args):
-        if self.usePipe:
-            res = func(self, *cPickle.loads(args[0], encoding='latin1'))
-            return cPickle.dumps(res,-1)
-        else:
-            return func(self, *args)
-    return pickledFunc
-    
+pipedFunctions = {}
+def fromPipe(symbol):
+    def decorator(func):
+        global pipedFunctions
+        pipedFunctions[symbol] = func
+        return func
+    return decorator
+
 class interpreter:
     def __init__(self):
         self.buffer = bufferOut()
@@ -70,9 +67,16 @@ class interpreter:
         self.stdOutBuff = PseudoFileOutBuffer(self.buffer)
         self.stdErrBuff = PseudoFileOutBuffer(self.buffer, True)
         self.interp = code.InteractiveInterpreter(globals())
-        #sys.stdout=self.stdOutBuff
-        #sys.stderr=self.stdErrBuff
+        sys.stdout=self.stdOutBuff
+        sys.stderr=self.stdErrBuff
 
+    @fromPipe('A')
+    def flush(self):
+        err = False
+        result = self.buffer.read()
+        return err, result
+
+    @fromPipe('B')
     def tryCode(self, iLineStart, filename, block):
         err = None
         code = None
@@ -94,7 +98,8 @@ class interpreter:
             self.code = code
 
         return err, requireMore, isValue
-        
+
+    @fromPipe('C')
     def evaluate(self):
         try:
             object = eval(self.code,self.interp.locals,globals())
@@ -111,15 +116,8 @@ class interpreter:
             result = self.buffer.read()
         return err, result
 
-    def flush(self):
-        # try:
-            # self.interp.showtraceback()
-        # except:
-            # pass
-        err = False
-        result = self.buffer.read()
-        return err, result            
-            
+
+    @fromPipe('D')
     def execute(self):
         try:
             exec(self.code, self.interp.locals, globals())
@@ -128,7 +126,8 @@ class interpreter:
             err = True
             self.interp.showtraceback()
         return err, self.buffer.read()
-        
+
+    @fromPipe('E')
     def maxCallTip(self, value):
         '''Truncates text to fit in a call tip window.'''
         nMax = 2000  # max length
@@ -141,7 +140,8 @@ class interpreter:
             endLine = '\n...'
         value = '\n'.join(['\n'.join(textwrap.wrap(i, cMax)) for i in value[:nMax].split('\n')[:lMax]])
         return value + endLine
-    
+
+    @fromPipe('F')
     def getCallTip(self, line, var, truncate=True):
         element = introspect.getRoot(line)
         if len(element) < len(var): return
@@ -169,12 +169,14 @@ class interpreter:
         nHighlight = 0
         for i,ct in enumerate(calltip[:3]):
             nHighlight += len(ct)
-        
+
         return element, str(nHighlight), calltip
-            
+
+    @fromPipe('G')
     def getFullCallTip(self):
         return self.fullCallTip
-            
+
+    @fromPipe('H')
     def autoCompleteObject(self, linePart):
         element = introspect.getRoot(linePart)
         try:
@@ -189,6 +191,7 @@ class interpreter:
             autoCompleteList = None
         return autoCompleteList
 
+    @fromPipe('I')
     def autoCompleteFunction(self, linePart):
         element = introspect.getRoot(linePart)
         funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=self.interp.locals)
@@ -196,6 +199,7 @@ class interpreter:
         callTip = self.maxCallTip(funcHelp)
         return len(funcName)-1, funcParam, callTip
 
+    @fromPipe('J')
     def autoCompleteDict(self, linePart):
         element = introspect.getRoot(linePart)
         autoCompleteList = None
@@ -208,6 +212,7 @@ class interpreter:
             pass
         return autoCompleteList
 
+    @fromPipe('K')
     def showtraceback(self):
         """Display the exception that just occurred.
         The first two stack items are removed because it is
@@ -226,95 +231,69 @@ class interpreter:
         finally:
             tblist = tb = None
         map(sys.stderr, list)
-    
+
 #
 # Main function for the pyPadClient to run inside the python subprocess.
-# This function is under construction.
 #
 if __name__ == '__main__':
 
-    execute = False
     interp = interpreter()
-    
-    def executeFlag():
-        execute = True
-        
-    def wait():
-        time.sleep(0.1)
 
-    func = {
-        'A': interp.tryCode,
-        'B': interp.evaluate,
-        'C': executeFlag,
-        'D': interp.getCallTip,
-        'E': interp.autoCompleteObject,
-        'F': interp.autoCompleteFunction,
-        'G': interp.autoCompleteDict,
-        'H': interp.getFullCallTip,
-        'I': interp.flush
-        }
+    dataQueueOut = Queue.Queue()
+    dataQueueIn = Queue.Queue()
 
-    commandQueue = Queue.LifoQueue()
-    output = []
-    
-    def communicationLoop(queue):
+    def communicationLoop():
         while True:
             # receive the id of the function
             command = interp.stdin.read(1)
-            
-            # receive number of bytes of the data
-            n = int(interp.stdin.readline(), 16)
-            if n < 0: exit()
-            
-            # unpickle the received data
-            args = pickle.loads(interp.stdin.read(n))
-            
-            # call the function and pickle the result
-            ret = pickle.dumps(func[command](*args),-1)
-            
-            # send size of the result to the pipe
-            interp.stdout.write(hex(len(ret))+'\n')
-            
-            # send the result to the pipe
-            interp.stdout.write(ret)    
-            
-            
-    thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=(queue,))
-    thread.start()
-   
-    # def doCommand():
-        # # receive the id of the function
-        # command = interp.stdin.read(1)
-        
-        # # receive number of bytes of the data
-        # n = int(interp.stdin.readline(), 16)
-        # if n < 0: exit()
-        
-        # # unpickle the received data
-        # args = pickle.loads(interp.stdin.read(n))
-        
-        # # call the function and pickle the result
-        # ret = pickle.dumps(func[command](*args),-1)
-        
-        # # send size of the result to the pipe
-        # interp.stdout.write(hex(len(ret))+'\n')
-        
-        # # send the result to the pipe
-        # interp.stdout.write(ret)    
-    
-    
-    # enless loop in the client mode
-    while thread.is_alive():
-    
-        if execute:
-            interp.execute()
-            
-        wait()
 
-        #doCommand(commandQueue.get())
-        
-        #if commandQueue.empty():
-        #    wait()
-    
+            # unpickle the received data
+            dataFromPipe = pickle.load(interp.stdin)
+
+            # to queue for execution in main thread
+            dataQueueIn.put((command, dataFromPipe))
+
+            # from queue answer from function
+            while dataQueueOut.empty(): time.sleep(0.01)
+            dataToPipe = dataQueueOut.get()
+
+            # pickle the result of the function
+            ret = pickle.dumps(dataToPipe,-1)
+
+            # send the result to the pipe
+            interp.stdout.write(ret)
+
+    thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
+    thread.start()
+
+    def matplotlib_EventHandler(interval):
+        backend = matplotlib.rcParams['backend']
+        if backend in _interactive_bk:
+            figManager = _pylab_helpers.Gcf.get_active()
+            if figManager is not None:
+                canvas = figManager.canvas
+                if canvas.figure.stale:
+                    canvas.draw()
+                canvas.start_event_loop(interval)
+
+        # No on-screen figure is active, so sleep() is all we need.
+        import time
+        time.sleep(interval)
+
+    def wait():
+        if activateMatplotlibEventHandler:
+            matplotlib_EventHandler(0.05)
+        else:
+            time.sleep(0.05)
+
+    # endless loop in the client mode
+    while thread.is_alive():
+        while dataQueueIn.empty():
+            wait()
+        command, dataFromPipe = dataQueueIn.get()
+        if command == "X": break
+        dataToPipe = pipedFunctions[command](interp, *dataFromPipe)
+        dataQueueOut.put(dataToPipe)
+
     exit()
 

@@ -8,8 +8,8 @@ try:
     Npp.pypad != None
 except:
     import Npp, pyPadPlusPlus
-    # Use of an external Python interpreter is not implemented yet.
-    Npp.pypad = pyPadPlusPlus.pyPad(externalPython=False)
+    Npp.pypad = pyPadPlusPlus.pyPad()
 Npp.console.show()
+Npp.editor.grabFocus()
 Npp.console.clear()
 Npp.console.editor.setReadOnly(0)

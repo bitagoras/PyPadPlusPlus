@@ -4,12 +4,19 @@
 
 import subprocess, os, time
 from Npp import console
-
+import threading, Queue
 try:
    import cPickle as pickle
 except:
    import pickle
 
+def toPipe(symbol):
+    def decorator(func):
+        def pipeWrapper(self, *param):
+            return self.pipeQueue(symbol, param)
+        return pipeWrapper
+    return decorator   
+   
 class interpreter:
     def __init__(self, pythonPath='pythonw'):
         clientPath = os.path.join(os.path.dirname(__file__), 'pyPadClient.py')
@@ -17,63 +24,77 @@ class interpreter:
         self.proc = subprocess.Popen(cmd,
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
                         universal_newlines=True)
-        time.sleep(1)
-        self.proc.stdin.flush()
 
-    def callPipe(self, command, args=()):
-        self.proc.stdin.write(command)
-        toPipe = pickle.dumps(args,-1)
-        self.proc.stdin.write(hex(len(toPipe))+'\n')
-        self.proc.stdin.write(toPipe)
-        self.proc.stdin.flush()
-        fromPipe = self.proc.stdout.readline()
-        assert len(fromPipe) > 1, command
-        nBytes = int(fromPipe, 16)
-        fromPipe = self.proc.stdout.read(nBytes)
-        ret = pickle.loads(fromPipe)
-        return ret
-
-    # func:
-        # A: interp.tryCode,
-        # B: interp.evaluate,
-        # C: interp.execute
-        # D: interp.getCallTip,
-        # E: interp.autoCompleteObject,
-        # F: interp.autoCompleteFunction,
-        # G: interp.autoCompleteDict,
-        # H: interp.getFullCallTip,
-        # H: interp.flush
-
-    def tryCode(self, iLineStart, filename, block):
-        return self.callPipe('A', (iLineStart, filename, block))
-
-    def evaluate(self):
-        return self.callPipe('B')
-
-    def execute(self):
-        return self.callPipe('C')
-
-    def getCallTip(self, line, var, truncate=True):
-        return self.callPipe('D', (line, var, truncate))
-
-    def autoCompleteObject(self, linePart):
-        return self.callPipe('E', (linePart,))
-
-    def autoCompleteFunction(self, linePart):
-        return self.callPipe('F', (linePart,))
-
-    def autoCompleteDict(self, linePart):
-        return self.callPipe('G', (linePart,))
-
-    def getFullCallTip(self, linePart):
-        return self.callPipe('H', (linePart,))
+        self.dataQueueOut = Queue.Queue()
+        self.dataQueueIn = Queue.Queue()
         
-    def flush(self):
-        return self.callPipe('I')
-        
-    def out(self, text):
-        if type(text) is not str: text = repr(text)
-        console.write('\n'+text+'\n')
-        console.editor.setReadOnly(0)
+        thread = threading.Thread(name='communicationLoop', target=self.communicationLoop, args=())
+        thread.start()
+                
+    def pipeQueue(self, id, data=()):
+        self.dataQueueOut.put((id, data))
+        return self.dataQueueIn.get()
+
+    def communicationLoop(self):
+        while True:
+            # from queue id and data of function
+            id, dataToPipe = self.dataQueueOut.get()
+            
+            # write the id of the function
+            self.proc.stdin.write(id)
+            
+            # pickle the data for transmitting
+            toPipe = pickle.dumps(dataToPipe,-1)
+            
+            # send data
+            self.proc.stdin.write(toPipe)
+            
+            # flush channel for immidiate transfer
+            self.proc.stdin.flush()
+
+            if id == 'X': return
+
+            # unpickle the received data
+            dataFromPipe = pickle.load(self.proc.stdout)
+
+            # answer to queue
+            self.dataQueueIn.put(dataFromPipe)
+
+    @toPipe('A')
+    def flush(self): pass
+    
+    @toPipe('B')
+    def tryCode(self, iLineStart, filename, block): pass
+    
+    @toPipe('C')
+    def evaluate(self): pass
+    
+    @toPipe('D')
+    def execute(self): pass
+    
+    @toPipe('E')
+    def maxCallTip(self, value): pass
+    
+    @toPipe('F')
+    def getCallTip(self, line, var, truncate=True): pass
+    
+    @toPipe('G')
+    def getFullCallTip(self): pass
+    
+    @toPipe('H')
+    def autoCompleteObject(self, linePart): pass
+    
+    @toPipe('I')
+    def autoCompleteFunction(self, linePart): pass
+    
+    @toPipe('J')
+    def autoCompleteDict(self, linePart): pass
+    
+    @toPipe('K')
+    def showtraceback(self): pass
+            
+    @toPipe('X')
+    def stopProcess(self): pass
+    
