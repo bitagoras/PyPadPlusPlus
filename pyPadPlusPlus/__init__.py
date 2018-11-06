@@ -147,13 +147,13 @@ class pyPad:
         if self.lock: return
         self.lock = True
         lang = notepad.getLangType()
+        filename = notepad.getCurrentFilename()
         if lang == Npp.LANGTYPE.TXT and '.' not in filename:
             notepad.setLangType(Npp.LANGTYPE.PYTHON)
         elif lang != Npp.LANGTYPE.PYTHON:
             self.lock = False
             return        
 
-        filename = notepad.getCurrentFilename()
         bufferID = notepad.getCurrentBufferID()                        
         if nonSelectedLine is None:
             iSelStart = editor.getSelectionStart()
