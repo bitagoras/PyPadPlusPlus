@@ -54,8 +54,6 @@ class interpreter:
             # flush channel for immidiate transfer
             self.proc.stdin.flush()
 
-            if id == 'X': return
-
             # unpickle the received data
             dataFromPipe = pickle.load(self.proc.stdout)
 

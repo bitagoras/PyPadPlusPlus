@@ -5,6 +5,7 @@
 activateMatplotlibEventHandler = True
 
 import sys, code, time
+from types import ModuleType
 import introspect  # Module for code introspection from the wxPython project
 from codeop import compile_command
 import traceback
@@ -116,7 +117,6 @@ class interpreter:
             result = self.buffer.read()
         return err, result
 
-
     @fromPipe('D')
     def execute(self):
         try:
@@ -131,15 +131,14 @@ class interpreter:
     def maxCallTip(self, value):
         '''Truncates text to fit in a call tip window.'''
         nMax = 2000  # max length
-        cMax = 100  # max colums
+        cMax = 112  # max colums
         lMax = 14  # max lines
         endLine = ''
-        n = len(value)
-        if n > nMax:
-            value = value[:nMax]
-            endLine = '\n...'
-        value = '\n'.join(['\n'.join(textwrap.wrap(i, cMax)) for i in value[:nMax].split('\n')[:lMax]])
-        return value + endLine
+        lines = []
+        for l in value[:nMax].split('\n'):
+            lines += textwrap.wrap(l, cMax)
+        value = '\n'.join(lines[:lMax]) + ('\n...' if len(lines) > lMax else '')
+        return value
 
     @fromPipe('F')
     def getCallTip(self, line, var, truncate=True):
@@ -162,9 +161,18 @@ class interpreter:
                 if truncate: funcHelp = self.maxCallTip(textFull)
                 calltip = 'type: ', typ, '\ndoc: ', funcHelp
             else:
-                textFull = value = str(object)
-                if truncate: value = self.maxCallTip(textFull)
-                calltip = 'type: ', typ, '\nstr: ', ('\n' if '\n' in value else '') + value
+                textFull = str(object)
+                if isinstance(object, ModuleType):
+                    try:
+                        textFull = textFull + '\nhelp:\n'+object.__doc__
+                    except: pass
+                    value = textFull
+                    if truncate: value = self.maxCallTip(textFull)
+                    calltip = 'type: ', typ, '\nstr: ', ('\n' if '\n' in value else '') + value
+                else:
+                    value = textFull
+                    if truncate: value = self.maxCallTip(textFull)
+                    calltip = 'type: ', typ, '\nstr: ', ('\n' if '\n' in value else '') + value
             self.fullCallTip = var, calltip[:-1] + (textFull,)
         nHighlight = 0
         for i,ct in enumerate(calltip[:3]):
@@ -253,8 +261,7 @@ if __name__ == '__main__':
             # to queue for execution in main thread
             dataQueueIn.put((command, dataFromPipe))
 
-            # from queue answer from function
-            while dataQueueOut.empty(): time.sleep(0.01)
+            # get answer of function from queue
             dataToPipe = dataQueueOut.get()
 
             # pickle the result of the function
@@ -270,7 +277,7 @@ if __name__ == '__main__':
         backend = matplotlib.rcParams['backend']
         if backend in _interactive_bk:
             figManager = _pylab_helpers.Gcf.get_active()
-            if figManager is not None:
+            if figManager:
                 canvas = figManager.canvas
                 if canvas.figure.stale:
                     canvas.draw()

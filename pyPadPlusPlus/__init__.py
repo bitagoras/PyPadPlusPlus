@@ -146,6 +146,14 @@ class pyPad:
         the current selection. Or execute one marked block.'''
         if self.lock: return
         self.lock = True
+        lang = notepad.getLangType()
+        if lang == Npp.LANGTYPE.TXT and '.' not in filename:
+            notepad.setLangType(Npp.LANGTYPE.PYTHON)
+        elif lang != Npp.LANGTYPE.PYTHON:
+            self.lock = False
+            return        
+
+        filename = notepad.getCurrentFilename()
         bufferID = notepad.getCurrentBufferID()                        
         if nonSelectedLine is None:
             iSelStart = editor.getSelectionStart()
@@ -156,30 +164,26 @@ class pyPad:
         else:
             iLineStart = iLineEnd = iSelStart = iSelEnd = nonSelectedLine
         selection = iSelStart != iSelEnd
-        getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
-        iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
-        if isEmpty:
-            self.hideMarkers(bufferID)
-            self.lock = False
-            return
-        iLineStart = self.completeBlockStart(iLineStart, expectMoreLinesBefore)
-
-        requireMore = True
-        filename = notepad.getCurrentFilename()
-        lang = notepad.getLangType()
-        if lang == Npp.LANGTYPE.TXT and '.' not in filename:
-            notepad.setLangType(Npp.LANGTYPE.PYTHON)
-        elif lang != Npp.LANGTYPE.PYTHON:
-            self.lock = False
-            return
-
+        startLine = editor.getLine(iLineStart).rstrip()
+        blockMode = not selection and (startLine.startswith('#%%') or startLine.startswith('# %%'))
         err = None
+        if not blockMode:
+            getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
+            iFirstCodeLine, iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
+            if not expectMoreLinesBefore and iFirstCodeLine:
+                iLineStart = iFirstCodeLine
+            if isEmpty:
+                self.hideMarkers(bufferID)
+                self.lock = False
+                return
+            iLineStart = self.completeBlockStart(iLineStart, expectMoreLinesBefore)
+
+            requireMore = True
 
         iStart = editor.positionFromLine(iLineStart)
         iDocEnd = editor.getLength()
 
-        line = editor.getLine(iLineStart).rstrip()
-        if not selection and (line.startswith('#%%') or line.startswith('# %%')):
+        if blockMode:
             iMatch = []
             editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+4, iDocEnd-1, 1)
             iEnd = iMatch[0]-1 if len(iMatch) else iDocEnd
@@ -187,9 +191,7 @@ class pyPad:
             block = editor.getTextRange(iStart, iEnd).rstrip()
             err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
             if requireMore:
-                self.hideMarkers(bufferID)
-                self.lock = False
-                return
+                err = True
 
         else:
             # add more lines until the parser is happy or finds
@@ -201,7 +203,7 @@ class pyPad:
                     err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
                 else: err, requireMore, isValue = None, True, False
                 if requireMore:
-                    iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd, -1)
+                    iCodeLineStart, iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd, -1)
                     if iEnd == -1:
                         iLineEnd = iLineStart
                         break
@@ -254,18 +256,18 @@ class pyPad:
             line = editor.getLine(iLine).rstrip()
             isCodeLine = len(line) > 0 and not line.lstrip().startswith('#')
             isDecorator = line.startswith('@')
-            isIndent = line.startswith(' ') or line.startswith('\t')
+            isIndent = isCodeLine and (line.startswith(' ') or line.startswith('\t'))
             requireMoreLine = isIndent or line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:')
             satisfied = not requireMoreLine and not expectMoreLines and isCodeLine
             satisfied = satisfied or (not requireMoreLine and not isCodeLine and not expectMoreLines)
             if isDecorator:
                 satisfied = False
+            if satisfied:
+                break
             if isCodeLine:
                 iFirstCodeLine = iLine
                 if not isIndent: expectMoreLines = False
-            if satisfied:
-                break
             iLine -= 1
         return max(0, iFirstCodeLine)
 
@@ -273,25 +275,33 @@ class pyPad:
         '''Add following lines that are required to execute
         the selected code, without leaving code that cannot
         be executed seperately in the next step.'''
-        iLastCodeLine = iLineMin
-        expectMoreLines = False
+        iLastCodeLine = iLine
+        iFirstCodeLine = None
+        inspectMoreLines = False
+        nextLineIsRequired = False
         while iLine <= iLineMax:
+            thisLineIsRequired = nextLineIsRequired
             line = editor.getLine(iLine).rstrip()
-            isCodeLine = len(line) > 0 and not line.startswith('#')
-            isIndent = line.startswith(' ') or line.startswith('\t')
-            requireMoreLine = line.startswith('else:') or line.startswith('elif') \
+            isCodeLine = len(line) > 0 and not line.lstrip().startswith('#')
+            isIndent = isCodeLine and (line.startswith(' ') or line.startswith('\t'))
+            nextLineIsRequired = line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:')
-            if requireMoreLine or isIndent: expectMoreLines = True
+            if nextLineIsRequired or isIndent: inspectMoreLines = True
             if isEmpty and isIndent: expectMoreLinesBefore = True
             if isCodeLine: isEmpty = False
-            if isCodeLine and not requireMoreLine: expectMoreLines = False
-            satisfied = not isIndent and isCodeLine and not expectMoreLines and not requireMoreLine
-            if iLine >= iLineMin and satisfied:
-                yield iLastCodeLine, isEmpty, expectMoreLinesBefore
+            if isCodeLine and not nextLineIsRequired: inspectMoreLines = False
             if isCodeLine:
-                iLastCodeLine = max(iLineMin, iLine)
+                if iFirstCodeLine is None:
+                    iFirstCodeLine = iLine
+                if thisLineIsRequired or iLine <= iLineMin:
+                    iLastCodeLine = iLine
+            satisfied = not isIndent and isCodeLine and not inspectMoreLines and not nextLineIsRequired
+            if iLine >= iLineMin and satisfied:
+                yield iFirstCodeLine, iLastCodeLine, isEmpty, expectMoreLinesBefore
+            if isCodeLine:
+                iLastCodeLine = iLine
             iLine += 1
-        yield iLastCodeLine, isEmpty, expectMoreLinesBefore
+        yield iFirstCodeLine, iLastCodeLine, isEmpty, expectMoreLinesBefore
 
     def threadValue(self, bufferID):
         '''Thread of the running code in case the code is
@@ -485,7 +495,7 @@ class pyPad:
     def onCalltipClick(self, args):
         if self.activeCalltip == 'doc':# and args['position']==0:
             var, calltip = self.interp.getFullCallTip()
-            head = '='*(40 - len(var)//2 - 3) + ' Calltip: ' + var + ' ' + '='*(40 - len(var)//2 - 3)
+            head = '='*(40 - len(var)//2 - 3) + ' Info: ' + var + ' ' + '='*(40 - len(var)//2 - 3)
             foot = '='*len(head)
             self.stdout('\n' + head + '\n' + ''.join(calltip) + '\n' + foot + '\n')
         elif self.activeCalltip == True:
