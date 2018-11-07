@@ -456,18 +456,28 @@ class pyPad:
 
     def outBuffer(self, buffer):
         console.editor.beginUndoAction()
+        out = []
+        mode = True
+        collect = []
+        collectErr = None
         for err, line in buffer:
-            if err: console.writeError(line)
-            else: console.write(line)
+            collect.append(line)
+            if collectErr is None:
+                collectErr = err
+            if collectErr != err:
+                if collectErr: console.writeError(''.join(collect))
+                else: console.write(''.join(collect))
+                collectErr = err
+                collect = []
+        if collectErr: console.writeError(''.join(collect))
+        else: console.write(''.join(collect))
         console.editor.endUndoAction()
         console.editor.setReadOnly(0)
 
     def textModified(self, args):
-        '''When the text is modified the execution markers
-        will be hidden, except when the code is running or
-        when the color just has changed in the last few seconds.'''
-        #if args['text'] != '':
-        if args['linesAdded'] != 0:
+        '''When the marked text is modified the execution markers
+        will be hidden, except when the code is still running.'''
+        if args['text'] != '':
             bufferID = notepad.getCurrentBufferID()
             if self.markers.get(bufferID, None) is not None and not self.lock and len(self.markers[bufferID]) > 0:
                 iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
@@ -487,12 +497,14 @@ class pyPad:
                     self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
 
     def hideMarkers(self, bufferID=None):
+        '''Hide all markers of the current buffer ID.'''
         if bufferID is None: bufferID = notepad.getCurrentBufferID()
         markers = self.markers.get(bufferID,[])
         while markers:
             editor.markerDeleteHandle(markers.pop())
 
     def onCalltipClick(self, args):
+        '''When clicked on the calltip write the full calltip in the output console.'''
         if self.activeCalltip == 'doc':# and args['position']==0:
             var, calltip = self.interp.getFullCallTip()
             head = '='*(40 - len(var)//2 - 3) + ' Info: ' + var + ' ' + '='*(40 - len(var)//2 - 3)
@@ -542,7 +554,7 @@ class pyPad:
                 pass
 
     def onAutocomplete(self, args):
-        '''Check if auto complete data can added and displayed:
+        '''Check if auto complete data can be added and displayed:
         "." after objects: show auto completion list with properties and methods
         "[" after dict: show auto completion list with keys
         "(" after functions: insert template and display a call tip with the doc string.'''

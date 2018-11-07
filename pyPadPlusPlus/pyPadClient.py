@@ -11,6 +11,7 @@ from codeop import compile_command
 import traceback
 import textwrap
 import threading, Queue
+from copy import copy
 try:
    import cPickle as pickle
 except:
@@ -19,6 +20,11 @@ if activateMatplotlibEventHandler:
     import matplotlib
     from matplotlib import _pylab_helpers
     from matplotlib.rcsetup import interactive_bk as _interactive_bk
+    import matplotlib.pyplot
+    pyplotShow = matplotlib.pyplot.show
+    def show(*args, **kw):
+        pyplotShow(block=False, *args, **kw)
+    matplotlib.pyplot.show = show  # monkeypatch plt.show for non-blocking mode as default
 
 class bufferOut:
     def __init__(self):
@@ -67,9 +73,10 @@ class interpreter:
         self.stdin = sys.stdin
         self.stdOutBuff = PseudoFileOutBuffer(self.buffer)
         self.stdErrBuff = PseudoFileOutBuffer(self.buffer, True)
-        self.interp = code.InteractiveInterpreter(globals())
         sys.stdout=self.stdOutBuff
         sys.stderr=self.stdErrBuff
+        self.userGlobals = copy(globals())
+        self.interp = code.InteractiveInterpreter(self.userGlobals)
 
     @fromPipe('A')
     def flush(self):
@@ -103,7 +110,7 @@ class interpreter:
     @fromPipe('C')
     def evaluate(self):
         try:
-            object = eval(self.code,self.interp.locals,globals())
+            object = eval(self.code,locals(), self.userGlobals)
             if object is not None:
                 result = repr(object)
             else:
@@ -120,7 +127,7 @@ class interpreter:
     @fromPipe('D')
     def execute(self):
         try:
-            exec(self.code, self.interp.locals, globals())
+            exec(self.code, locals(), self.userGlobals)
             err = False
         except:
             err = True
@@ -145,12 +152,12 @@ class interpreter:
         element = introspect.getRoot(line)
         if len(element) < len(var): return
         try:
-            object = eval(element,self.interp.locals,globals())
+            object = eval(element, locals(), self.userGlobals)
         except:
             return
         if var in element:
             try:
-                funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=self.interp.locals)
+                funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=locals())
             except:
                 funcHelp = ''
             typ = str(type(object))
@@ -188,7 +195,7 @@ class interpreter:
     def autoCompleteObject(self, linePart):
         element = introspect.getRoot(linePart)
         try:
-            autoCompleteList = dir(eval(element,self.interp.locals,globals()))
+            autoCompleteList = dir(eval(element, locals(), self.userGlobals))
             if len(autoCompleteList) > 0:
                 #autoCompleteList = '\t'.join(sorted([i for i in autoCompleteList if not i.startswith('_')]) + \
                 #        sorted([i for i in autoCompleteList if i.startswith('_')]))
@@ -202,7 +209,7 @@ class interpreter:
     @fromPipe('I')
     def autoCompleteFunction(self, linePart):
         element = introspect.getRoot(linePart)
-        funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=self.interp.locals)
+        funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=locals())
         self.fullCallTip = funcName, funcHelp
         callTip = self.maxCallTip(funcHelp)
         return len(funcName)-1, funcParam, callTip
@@ -212,7 +219,7 @@ class interpreter:
         element = introspect.getRoot(linePart)
         autoCompleteList = None
         try:
-            object = eval(element,self.interp.locals,globals())
+            object = eval(element, locals(), self.userGlobals)
             t = type(object)
             if t is dict or 'h5py.' in str(t):
                 autoCompleteList = '\t'.join(sorted([repr(i) for i in object.keys()])) if len(object) < 1000 else None
@@ -282,10 +289,7 @@ if __name__ == '__main__':
                 if canvas.figure.stale:
                     canvas.draw()
                 canvas.start_event_loop(interval)
-
-        # No on-screen figure is active, so sleep() is all we need.
-        import time
-        time.sleep(interval)
+        time.sleep(interval) # In case no on-screen figure is active
 
     def wait():
         if activateMatplotlibEventHandler:
