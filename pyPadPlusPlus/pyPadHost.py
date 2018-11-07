@@ -20,8 +20,12 @@ def toPipe(symbol):
 class interpreter:
     def __init__(self, pythonPath='pythonw'):
         clientPath = os.path.join(os.path.dirname(__file__), 'pyPadClient.py')
-        cmd = pythonPath + ' -u ' + '"' + clientPath + '"'
-        self.proc = subprocess.Popen(cmd,
+        self.StartCommand = pythonPath + ' -u ' + '"' + clientPath + '"'
+        
+        self.startNewKernel()
+        
+    def startNewKernel(self):
+        self.proc = subprocess.Popen(self.StartCommand,
                         stdin=subprocess.PIPE,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
@@ -29,10 +33,12 @@ class interpreter:
 
         self.dataQueueOut = Queue.Queue()
         self.dataQueueIn = Queue.Queue()
+        self.thread = threading.Thread(name='communicationLoop', target=self.communicationLoop, args=())
+        self.thread.start()
+
+    def killKernel(self):
+        self.thread
         
-        thread = threading.Thread(name='communicationLoop', target=self.communicationLoop, args=())
-        thread.start()
-                
     def pipeQueue(self, id, data=()):
         self.dataQueueOut.put((id, data))
         return self.dataQueueIn.get()

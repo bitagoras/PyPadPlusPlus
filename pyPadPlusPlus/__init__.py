@@ -35,7 +35,8 @@ class pyPad:
         for interactive Python development'''
         console.show()
         editor.grabFocus()
-
+        self.windowHandle = win32gui.GetForegroundWindow()
+        
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
         sys.stdout.outp=PseudoFileOut(Npp.console.write)
@@ -123,7 +124,7 @@ class pyPad:
             x,y = win32api.GetCursorPos()
             hwnd = win32gui.WindowFromPoint((x,y))
             x0,y0,x1,y1 = win32gui.GetWindowRect(hwnd)
-            if x0 <= x <= x1 and y0 <= y <= y1 and win32gui.GetParent(hwnd) == win32gui.GetForegroundWindow():
+            if x0 <= x <= x1 and y0 <= y <= y1 and win32gui.GetParent(hwnd) == win32gui.GetForegroundWindow() == self.windowHandle:
                 pos = editor.positionFromPoint(x-x0, y-y0)
                 iLineClick = editor.lineFromPosition(pos)
                 iLineStart = editor.lineFromPosition(editor.getSelectionStart())
@@ -139,7 +140,7 @@ class pyPad:
                 err, result = self.interp.flush()
                 if result:
                     self.outBuffer(result)
-        threading.Timer(0.02, self.onTimer).start()
+        threading.Timer(0.025, self.onTimer).start()
 
     def execute(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for

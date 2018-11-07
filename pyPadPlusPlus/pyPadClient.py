@@ -24,7 +24,7 @@ if activateMatplotlibEventHandler:
     pyplotShow = matplotlib.pyplot.show
     def show(*args, **kw):
         pyplotShow(block=False, *args, **kw)
-    matplotlib.pyplot.show = show  # monkeypatch plt.show for non-blocking mode as default
+    matplotlib.pyplot.show = show  # monkeypatch plt.show to default to non-blocking mode
 
 class bufferOut:
     def __init__(self):
@@ -75,8 +75,8 @@ class interpreter:
         self.stdErrBuff = PseudoFileOutBuffer(self.buffer, True)
         sys.stdout=self.stdOutBuff
         sys.stderr=self.stdErrBuff
-        self.userGlobals = copy(globals())
-        self.interp = code.InteractiveInterpreter(self.userGlobals)
+        self.userLocals = {}
+        self.interp = code.InteractiveInterpreter(globals())
 
     @fromPipe('A')
     def flush(self):
@@ -110,7 +110,7 @@ class interpreter:
     @fromPipe('C')
     def evaluate(self):
         try:
-            object = eval(self.code,locals(), self.userGlobals)
+            object = eval(self.code, self.interp.locals, globals())
             if object is not None:
                 result = repr(object)
             else:
@@ -127,7 +127,7 @@ class interpreter:
     @fromPipe('D')
     def execute(self):
         try:
-            exec(self.code, locals(), self.userGlobals)
+            exec(self.code, self.interp.locals, globals())
             err = False
         except:
             err = True
@@ -152,12 +152,12 @@ class interpreter:
         element = introspect.getRoot(line)
         if len(element) < len(var): return
         try:
-            object = eval(element, locals(), self.userGlobals)
+            object = eval(element, self.interp.locals, globals())
         except:
             return
         if var in element:
             try:
-                funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=locals())
+                funcName, funcParam, funcHelp = introspect.getCallTip(element, locals= self.interp.locals)
             except:
                 funcHelp = ''
             typ = str(type(object))
@@ -182,7 +182,7 @@ class interpreter:
                     calltip = 'type: ', typ, '\nstr: ', ('\n' if '\n' in value else '') + value
             self.fullCallTip = var, calltip[:-1] + (textFull,)
         nHighlight = 0
-        for i,ct in enumerate(calltip[:3]):
+        for ct in calltip[:3]:
             nHighlight += len(ct)
 
         return element, str(nHighlight), calltip
@@ -195,7 +195,7 @@ class interpreter:
     def autoCompleteObject(self, linePart):
         element = introspect.getRoot(linePart)
         try:
-            autoCompleteList = dir(eval(element, locals(), self.userGlobals))
+            autoCompleteList = dir(eval(element, self.interp.locals, globals()))
             if len(autoCompleteList) > 0:
                 #autoCompleteList = '\t'.join(sorted([i for i in autoCompleteList if not i.startswith('_')]) + \
                 #        sorted([i for i in autoCompleteList if i.startswith('_')]))
@@ -209,7 +209,7 @@ class interpreter:
     @fromPipe('I')
     def autoCompleteFunction(self, linePart):
         element = introspect.getRoot(linePart)
-        funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=locals())
+        funcName, funcParam, funcHelp = introspect.getCallTip(element, locals= self.interp.locals)
         self.fullCallTip = funcName, funcHelp
         callTip = self.maxCallTip(funcHelp)
         return len(funcName)-1, funcParam, callTip
@@ -219,7 +219,7 @@ class interpreter:
         element = introspect.getRoot(linePart)
         autoCompleteList = None
         try:
-            object = eval(element, locals(), self.userGlobals)
+            object = eval(element, self.interp.locals, globals())
             t = type(object)
             if t is dict or 'h5py.' in str(t):
                 autoCompleteList = '\t'.join(sorted([repr(i) for i in object.keys()])) if len(object) < 1000 else None
@@ -247,10 +247,8 @@ class interpreter:
             tblist = tb = None
         map(sys.stderr, list)
 
-#
-# Main function for the pyPadClient to run inside the python subprocess.
-#
-if __name__ == '__main__':
+
+def startRemoteClient():
 
     interp = interpreter()
 
@@ -297,14 +295,31 @@ if __name__ == '__main__':
         else:
             time.sleep(0.05)
 
+    # busyLoop = threading.Event()
+    # busyLoop.clear()
+    
+    # def busyLoop():
+        # while True:
+            # busyLoop.wait()
+            # busyLoop.clear()
+            
+    isExecuting = False
+            
     # endless loop in the client mode
     while thread.is_alive():
         while dataQueueIn.empty():
             wait()
         command, dataFromPipe = dataQueueIn.get()
         if command == "X": break
+        # busyLoop.set() #  let the busyLoop do the communication
         dataToPipe = pipedFunctions[command](interp, *dataFromPipe)
+        # busyLoop.clear() #  stop the busyLoop and let the main loop do the communication
         dataQueueOut.put(dataToPipe)
 
-    exit()
 
+#
+# Main function for the pyPadClient to run inside the python subprocess.
+#
+if __name__ == '__main__':
+    startRemoteClient()
+    exit()
