@@ -1,10 +1,10 @@
 # PyPadPlusPlus: A Notepad++ plugin for interactive Python development,
-# based on the Python Script plugin
+# requires the Python Script plugin.
 
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "0.4"
+__version__ = "0.5"
 
 import Npp
 from Npp import editor, console, notepad
@@ -22,8 +22,8 @@ from math import sin, pi
 # Set pythonPath to None for internal Python from Python Script Plugin of Notepad++
 # For external python environment specify path to file pythonw.exe.
 
-pythonPath = 'C:\\prog\\Anaconda2\\pythonw.exe'
-#pythonPath = None
+#pythonPath = 'C:\\Programs\\Anaconda2\\pythonw.exe'
+pythonPath = None
 
 class PseudoFileOut:
     def __init__(self, write):
@@ -44,7 +44,7 @@ class pyPad:
         if externalPython:
             # start syntax highligter
             EnhancedPythonLexer().main()
-            self.interp = pyPadHost.interpreter(externalPython)
+            self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
         else:
             # syntax highligter could slow down notepad++ in this mode
             self.interp = pyPadClient.interpreter()
@@ -141,6 +141,28 @@ class pyPad:
                 if result:
                     self.outBuffer(result)
         threading.Timer(0.025, self.onTimer).start()
+
+    def textModified(self, args):
+        '''When the marked text is modified the execution markers
+        will be hidden, except when the code is still running.'''
+        if args['text'] != '':
+            bufferID = notepad.getCurrentBufferID()
+            if self.markers.get(bufferID, None) is not None and not self.lock and len(self.markers[bufferID]) > 0:
+                iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
+                iLines = []
+                for i in self.markers[bufferID]:
+                    iLine = editor.markerLineFromHandle(i)
+                    iLines.append(iLine)
+                if min(iLines) <= iCurrentLine <= max(iLines):
+                    self.hideMarkers(bufferID)
+            if self.markers.get(bufferID, None) is not None and self.lock and len(self.markers[bufferID]) > 0:
+                iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
+                iLines = []
+                for i in self.markers[bufferID]:
+                    iLine = editor.markerLineFromHandle(i)
+                    iLines.append(iLine)
+                if min(iLines) <= iCurrentLine <= max(iLines):
+                    self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
 
     def execute(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
@@ -475,28 +497,6 @@ class pyPad:
         console.editor.endUndoAction()
         console.editor.setReadOnly(0)
 
-    def textModified(self, args):
-        '''When the marked text is modified the execution markers
-        will be hidden, except when the code is still running.'''
-        if args['text'] != '':
-            bufferID = notepad.getCurrentBufferID()
-            if self.markers.get(bufferID, None) is not None and not self.lock and len(self.markers[bufferID]) > 0:
-                iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
-                iLines = []
-                for i in self.markers[bufferID]:
-                    iLine = editor.markerLineFromHandle(i)
-                    iLines.append(iLine)
-                if min(iLines) <= iCurrentLine <= max(iLines):
-                    self.hideMarkers(bufferID)
-            if self.markers.get(bufferID, None) is not None and self.lock and len(self.markers[bufferID]) > 0:
-                iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
-                iLines = []
-                for i in self.markers[bufferID]:
-                    iLine = editor.markerLineFromHandle(i)
-                    iLines.append(iLine)
-                if min(iLines) <= iCurrentLine <= max(iLines):
-                    self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
-
     def hideMarkers(self, bufferID=None):
         '''Hide all markers of the current buffer ID.'''
         if bufferID is None: bufferID = notepad.getCurrentBufferID()
@@ -576,7 +576,7 @@ class pyPad:
                 editor.callTipShow(max(0,iPos-n), callTip)
                 editor.callTipSetHlt(0, max(0, callTip.find('\n')))
                 self.activeCalltip = 'doc'
-            if funcParam:
+            if funcParam and iPos == editor.getCurrentPos():
                 editor.insertText(iPos,funcParam+')')
                 editor.setSelectionStart(iPos)
                 editor.setSelectionStart(iPos + len(funcParam) + 1)

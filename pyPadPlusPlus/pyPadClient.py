@@ -16,6 +16,7 @@ try:
    import cPickle as pickle
 except:
    import pickle
+
 if activateMatplotlibEventHandler:
     import matplotlib
     from matplotlib import _pylab_helpers
@@ -23,7 +24,9 @@ if activateMatplotlibEventHandler:
     import matplotlib.pyplot
     pyplotShow = matplotlib.pyplot.show
     def show(*args, **kw):
-        pyplotShow(block=False, *args, **kw)
+        if not 'block' in kw:
+            kw['block'] = False
+        pyplotShow(*args, **kw)
     matplotlib.pyplot.show = show  # monkeypatch plt.show to default to non-blocking mode
 
 class bufferOut:
@@ -76,7 +79,8 @@ class interpreter:
         sys.stdout=self.stdOutBuff
         sys.stderr=self.stdErrBuff
         self.userLocals = {}
-        self.interp = code.InteractiveInterpreter(globals())
+        self.userLocals.update(globals())
+        self.interp = code.InteractiveInterpreter(self.userLocals)
 
     @fromPipe('A')
     def flush(self):
@@ -110,7 +114,7 @@ class interpreter:
     @fromPipe('C')
     def evaluate(self):
         try:
-            object = eval(self.code, self.interp.locals, globals())
+            object = eval(self.code, self.interp.locals)
             if object is not None:
                 result = repr(object)
             else:
@@ -127,7 +131,7 @@ class interpreter:
     @fromPipe('D')
     def execute(self):
         try:
-            exec(self.code, self.interp.locals, globals())
+            exec(self.code, self.interp.locals)
             err = False
         except:
             err = True
@@ -152,7 +156,7 @@ class interpreter:
         element = introspect.getRoot(line)
         if len(element) < len(var): return
         try:
-            object = eval(element, self.interp.locals, globals())
+            object = eval(element, self.interp.locals)
         except:
             return
         if var in element:
@@ -195,7 +199,7 @@ class interpreter:
     def autoCompleteObject(self, linePart):
         element = introspect.getRoot(linePart)
         try:
-            autoCompleteList = dir(eval(element, self.interp.locals, globals()))
+            autoCompleteList = dir(eval(element, self.interp.locals))
             if len(autoCompleteList) > 0:
                 #autoCompleteList = '\t'.join(sorted([i for i in autoCompleteList if not i.startswith('_')]) + \
                 #        sorted([i for i in autoCompleteList if i.startswith('_')]))
@@ -219,7 +223,7 @@ class interpreter:
         element = introspect.getRoot(linePart)
         autoCompleteList = None
         try:
-            object = eval(element, self.interp.locals, globals())
+            object = eval(element, self.interp.locals)
             t = type(object)
             if t is dict or 'h5py.' in str(t):
                 autoCompleteList = '\t'.join(sorted([repr(i) for i in object.keys()])) if len(object) < 1000 else None
@@ -248,7 +252,7 @@ class interpreter:
         map(sys.stderr, list)
 
 
-def startRemoteClient():
+def startLocalClient():
 
     interp = interpreter()
 
@@ -266,13 +270,23 @@ def startRemoteClient():
             # to queue for execution in main thread
             dataQueueIn.put((command, dataFromPipe))
 
-            # get answer of function from queue
-            dataToPipe = dataQueueOut.get()
+            # loop while flushing the stdout buffer
+            dataToPipe = None
+            while dataToPipe is None:
+                # wait for answer of function from queue
+                try:
+                    dataToPipe = (dataQueueOut.get(timeout=0.05),)
+                except:
+                    dataToPipe = None
+                buffer = interp.buffer.read()
+                if buffer:
+                    ret = pickle.dumps(('B', buffer), -1)
+                    interp.stdout.write(ret)
 
             # pickle the result of the function
-            ret = pickle.dumps(dataToPipe,-1)
+            ret = pickle.dumps(('A', dataToPipe[0]), -1)
 
-            # send the result to the pipe
+            # send the resulting answer to the pipe
             interp.stdout.write(ret)
 
     thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
@@ -295,25 +309,15 @@ def startRemoteClient():
         else:
             time.sleep(0.05)
 
-    # busyLoop = threading.Event()
-    # busyLoop.clear()
-    
-    # def busyLoop():
-        # while True:
-            # busyLoop.wait()
-            # busyLoop.clear()
-            
     isExecuting = False
-            
+
     # endless loop in the client mode
     while thread.is_alive():
         while dataQueueIn.empty():
             wait()
         command, dataFromPipe = dataQueueIn.get()
         if command == "X": break
-        # busyLoop.set() #  let the busyLoop do the communication
         dataToPipe = pipedFunctions[command](interp, *dataFromPipe)
-        # busyLoop.clear() #  stop the busyLoop and let the main loop do the communication
         dataQueueOut.put(dataToPipe)
 
 
@@ -321,5 +325,5 @@ def startRemoteClient():
 # Main function for the pyPadClient to run inside the python subprocess.
 #
 if __name__ == '__main__':
-    startRemoteClient()
+    startLocalClient()
     exit()

@@ -18,7 +18,8 @@ def toPipe(symbol):
     return decorator   
    
 class interpreter:
-    def __init__(self, pythonPath='pythonw'):
+    def __init__(self, pythonPath='pythonw', outBuffer=None):
+        self.outBuffer = outBuffer
         clientPath = os.path.join(os.path.dirname(__file__), 'pyPadClient.py')
         self.StartCommand = pythonPath + ' -u ' + '"' + clientPath + '"'
         
@@ -35,9 +36,10 @@ class interpreter:
         self.dataQueueIn = Queue.Queue()
         self.thread = threading.Thread(name='communicationLoop', target=self.communicationLoop, args=())
         self.thread.start()
+        self.buffer = []
 
-    def killKernel(self):
-        self.thread
+    def __del__(self):
+        self.stopProcess()
         
     def pipeQueue(self, id, data=()):
         self.dataQueueOut.put((id, data))
@@ -60,8 +62,15 @@ class interpreter:
             # flush channel for immidiate transfer
             self.proc.stdin.flush()
 
-            # unpickle the received data
-            dataFromPipe = pickle.load(self.proc.stdout)
+            returnType = None
+            while returnType != 'A':
+            
+                # unpickle the received data
+                returnType, dataFromPipe = pickle.load(self.proc.stdout)
+
+                if returnType == 'B':
+                    # unpickle the received buffer
+                    self.outBuffer(dataFromPipe)
 
             # answer to queue
             self.dataQueueIn.put(dataFromPipe)
