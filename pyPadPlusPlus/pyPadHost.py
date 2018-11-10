@@ -85,7 +85,7 @@ class interpreter:
     def evaluate(self): pass
     
     @toPipe('D')
-    def execute(self): pass
+    def execute(self): pass#, string=None): pass
     
     @toPipe('E')
     def maxCallTip(self, value): pass

@@ -2,8 +2,6 @@
 # PyPadPlusPlus: Module running in Python subprocess
 #
 
-activateMatplotlibEventHandler = True
-
 import sys, code, time
 from types import ModuleType
 import introspect  # Module for code introspection from the wxPython project
@@ -16,18 +14,6 @@ try:
    import cPickle as pickle
 except:
    import pickle
-
-if activateMatplotlibEventHandler:
-    import matplotlib
-    from matplotlib import _pylab_helpers
-    from matplotlib.rcsetup import interactive_bk as _interactive_bk
-    import matplotlib.pyplot
-    pyplotShow = matplotlib.pyplot.show
-    def show(*args, **kw):
-        if not 'block' in kw:
-            kw['block'] = False
-        pyplotShow(*args, **kw)
-    matplotlib.pyplot.show = show  # monkeypatch plt.show to default to non-blocking mode
 
 class bufferOut:
     def __init__(self):
@@ -129,9 +115,12 @@ class interpreter:
         return err, result
 
     @fromPipe('D')
-    def execute(self):
+    def execute(self, string=None):
         try:
-            exec(self.code, self.interp.locals)
+            if type(string) is str:
+                exec(string, globals())
+            else:
+                exec(self.code, self.interp.locals)
             err = False
         except:
             err = True
@@ -161,7 +150,7 @@ class interpreter:
             return
         if var in element:
             try:
-                funcName, funcParam, funcHelp = introspect.getCallTip(element, locals= self.interp.locals)
+                funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=self.interp.locals)
             except:
                 funcHelp = ''
             typ = str(type(object))
@@ -213,7 +202,7 @@ class interpreter:
     @fromPipe('I')
     def autoCompleteFunction(self, linePart):
         element = introspect.getRoot(linePart)
-        funcName, funcParam, funcHelp = introspect.getCallTip(element, locals= self.interp.locals)
+        funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=self.interp.locals)
         self.fullCallTip = funcName, funcHelp
         callTip = self.maxCallTip(funcHelp)
         return len(funcName)-1, funcParam, callTip
@@ -258,12 +247,15 @@ def startLocalClient():
 
     dataQueueOut = Queue.Queue()
     dataQueueIn = Queue.Queue()
-
+    
     def communicationLoop():
         while True:
             # receive the id of the function
             command = interp.stdin.read(1)
 
+            # set alive flag
+            alive.set()
+            
             # unpickle the received data
             dataFromPipe = pickle.load(interp.stdin)
 
@@ -289,9 +281,20 @@ def startLocalClient():
             # send the resulting answer to the pipe
             interp.stdout.write(ret)
 
+    alive = threading.Event()
+    def watchdog(timeout=5):
+        time.sleep(10) # time to initialize
+        while alive.isSet():
+            alive.clear()
+            time.sleep(timeout)
+        dataQueueIn.put(('X', None))
+    
+    threadWatchdog = threading.Thread(name='watchdog', target=watchdog, args=())
+    threadWatchdog.start()
+    
     thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
     thread.start()
-
+        
     def matplotlib_EventHandler(interval):
         backend = matplotlib.rcParams['backend']
         if backend in _interactive_bk:
@@ -304,7 +307,7 @@ def startLocalClient():
         time.sleep(interval) # In case no on-screen figure is active
 
     def wait():
-        if activateMatplotlibEventHandler:
+        if active_matplotlib_EventHandler:
             matplotlib_EventHandler(0.05)
         else:
             time.sleep(0.05)
@@ -320,10 +323,10 @@ def startLocalClient():
         dataToPipe = pipedFunctions[command](interp, *dataFromPipe)
         dataQueueOut.put(dataToPipe)
 
-
 #
 # Main function for the pyPadClient to run inside the python subprocess.
 #
 if __name__ == '__main__':
+    active_matplotlib_EventHandler = False   
     startLocalClient()
     exit()

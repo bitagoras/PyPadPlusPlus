@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "0.5"
+__version__ = "0.6"
 
 import Npp
 from Npp import editor, console, notepad
@@ -22,20 +22,36 @@ from math import sin, pi
 # Set pythonPath to None for internal Python from Python Script Plugin of Notepad++
 # For external python environment specify path to file pythonw.exe.
 
-#pythonPath = 'C:\\Programs\\Anaconda2\\pythonw.exe'
+#pythonPath = 'C:\\programs\\Anaconda2\\pythonw.exe'
 pythonPath = None
+
+init_matplotlib_EventHandler = """try:
+    import matplotlib
+    from matplotlib import _pylab_helpers
+    from matplotlib.rcsetup import interactive_bk as _interactive_bk
+    import matplotlib.pyplot
+    pyplotShow = matplotlib.pyplot.show
+    def show(*args, **kw):
+        if not 'block' in kw:
+            kw['block'] = False
+        pyplotShow(*args, **kw)
+    matplotlib.pyplot.show = show  # monkeypatch plt.show to default to non-blocking mode
+    active_matplotlib_EventHandler = True
+except: pass
+"""
 
 class PseudoFileOut:
     def __init__(self, write):
         self.write = write
     def write(self, s): pass
 class pyPad:
-    def __init__(self, externalPython=pythonPath):
+    def __init__(self, externalPython=pythonPath, matplotlib_EventHandler=True):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
         editor.grabFocus()
         self.windowHandle = win32gui.GetForegroundWindow()
+        self.matplotlib_EventHandler = matplotlib_EventHandler
         
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
@@ -80,7 +96,9 @@ class pyPad:
         editor.callback(self.textModified, [Npp.SCINTILLANOTIFICATION.MODIFIED])
         notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
         notepad.callback(self.onBufferActivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
-
+        notepad.clearCallbacks([Npp.NOTIFICATION.FILECLOSED])
+        notepad.callback(self.onClose, [Npp.NOTIFICATION.FILECLOSED])
+        
         editor.callTipSetBack((255,255,225))
         editor.autoCSetSeparator(ord('\t'))
         editor.autoCSetIgnoreCase(False)
@@ -97,19 +115,27 @@ class pyPad:
         filename = notepad.getCurrentFilename()
         path = os.path.split(filename)[0]
         if path:
-            self.interp.tryCode(0, 'none', 'import os; os.chdir('+repr(path)+')')
-            self.interp.execute()
+            self.interp.execute('import os; os.chdir('+repr(path)+')')
         self.lock = False
         
         self.onTimer()  # start periodic timer to check output of process
         
+    def onClose(self, args):
+        self.__del__()
+        
     def __del__(self):
         '''Clear call backs on exit.'''
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CHARADDED])
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.DWELLSTART])
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
-        notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
+        try: self.interp.proc.terminate()
+        except: pass
+        try:
+            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
+            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CHARADDED])
+            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.DWELLSTART])
+            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
+            notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
+            notepad.clearCallbacks([Npp.NOTIFICATION.FILEBEFORECLOSE])
+        except:
+            pass
 
     def onBufferActivated(self, args):
         bufferID = args["bufferID"]
@@ -130,9 +156,9 @@ class pyPad:
                 iLineStart = editor.lineFromPosition(editor.getSelectionStart())
                 iLineEnd = editor.lineFromPosition(editor.getSelectionEnd())
                 if iLineStart <= iLineClick <= iLineEnd:
-                    self.execute(moveCursor=False)
+                    self.runCodeAtCursor(moveCursor=False)
                 elif 0 <= pos < editor.getLength():
-                    self.execute(moveCursor=False, nonSelectedLine=iLineClick)
+                    self.runCodeAtCursor(moveCursor=False, nonSelectedLine=iLineClick)
 
         self.middleButton = middleButton
         if self.timerCount > 10:
@@ -163,8 +189,8 @@ class pyPad:
                     iLines.append(iLine)
                 if min(iLines) <= iCurrentLine <= max(iLines):
                     self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
-
-    def execute(self, moveCursor=True, nonSelectedLine=None):
+                    
+    def runCodeAtCursor(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
         if self.lock: return
@@ -250,6 +276,11 @@ class pyPad:
                 if iNewPos >= iDocEnd and iLineEnd == editor.getLineCount()-1:
                     editor.newLine()
                 editor.scrollCaret()
+                
+            if self.matplotlib_EventHandler:
+                if 'matplotlib' in block:
+                    self.interp.execute(init_matplotlib_EventHandler)
+                    self.matplotlib_EventHandler = False
                 
             if isValue:
                 self.thread = threading.Thread(name='threadValue', target=self.threadValue, args=(bufferID,))

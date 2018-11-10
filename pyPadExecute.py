@@ -5,9 +5,9 @@
 # Recommended is <Ctrl> + <Enter>
 
 try:
-    Npp.pypad.execute()
+    Npp.pypad.runCodeAtCursor()
 except:
     import Npp, pyPadPlusPlus
     Npp.pypad = pyPadPlusPlus.pyPad()
-    Npp.pypad.execute()
+    Npp.pypad.runCodeAtCursor()
 

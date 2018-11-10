@@ -5,8 +5,8 @@
 # Recommended is <Shift> + <Ctrl> + <Enter>
 
 try:
-    Npp.pypad.execute(moveCursor=False)
+    Npp.pypad.runCodeAtCursor(moveCursor=False)
 except:
     import Npp, pyPadPlusPlus
     Npp.pypad = pyPadPlusPlus.pyPad()
-    Npp.pypad.execute(moveCursor=False)
+    Npp.pypad.runCodeAtCursor(moveCursor=False)
