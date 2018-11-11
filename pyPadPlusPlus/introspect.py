@@ -10,12 +10,14 @@ __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
 __cvsid__ = "$Id: introspect.py 63479 2010-02-14 05:24:22Z RD $"
 __revision__ = "$Revision: 63479 (modified) $"[11:-2]
 
-import cStringIO
+try:
+    import cStringIO
+except ImportError:
+    from io import BytesIO as cStringIO
 import inspect
 import sys
 import tokenize
 import types
-#import wx
 
 def getAutoCompleteList(command='', locals=None, includeMagic=1, 
                         includeSingle=1, includeDouble=1):
@@ -242,7 +244,7 @@ def getRoot(command, terminator=None):
     if not tokens:
         return ''
     if terminator == '.' and \
-           (tokens[-1][1] <> '.' or tokens[-1][0] is not tokenize.OP):
+           (tokens[-1][1] != '.' or tokens[-1][0] is not tokenize.OP):
         # Trap decimals in numbers, versus the dot operator.
         return ''
     else:

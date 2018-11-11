@@ -22,9 +22,6 @@ from math import sin, pi
 # Set pythonPath to None for internal Python from Python Script Plugin of Notepad++
 # For external python environment specify path to file pythonw.exe.
 
-#pythonPath = 'C:\\programs\\Anaconda2\\pythonw.exe'
-pythonPath = None
-
 init_matplotlib_EventHandler = """try:
     import matplotlib
     from matplotlib import _pylab_helpers
@@ -45,7 +42,7 @@ class PseudoFileOut:
         self.write = write
     def write(self, s): pass
 class pyPad:
-    def __init__(self, externalPython=pythonPath, matplotlib_EventHandler=True):
+    def __init__(self, externalPython, matplotlib_EventHandler=True):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
@@ -57,6 +54,7 @@ class pyPad:
         sys.stderr=PseudoFileOut(Npp.console.writeError)
         sys.stdout.outp=PseudoFileOut(Npp.console.write)
 
+        self.externalPython = bool(externalPython)
         if externalPython:
             # start syntax highligter
             EnhancedPythonLexer().main()
@@ -67,7 +65,7 @@ class pyPad:
 
         self.thread = None
         self.threadMarker = None
-        self.lock = True
+        self.lock = 1
         self.delayedMarker = False
         self.activeCalltip = None
         editor.setTargetStart(0)
@@ -109,6 +107,8 @@ class pyPad:
         console.clear()
         console.editor.setReadOnly(0)
 
+        self.tTimer = 0.025
+        self.timerCountFlush = int(0.25 / self.tTimer)
         self.timerCount = 0
         self.middleButton = 0
 
@@ -116,7 +116,7 @@ class pyPad:
         path = os.path.split(filename)[0]
         if path:
             self.interp.execute('import os; os.chdir('+repr(path)+')')
-        self.lock = False
+        self.lock = 0
         
         self.onTimer()  # start periodic timer to check output of process
         
@@ -137,6 +137,16 @@ class pyPad:
         except:
             pass
 
+    def restartKernel(self):
+        if self.externalPython:
+            bufferID = self.lock
+            self.interp.restartKernel()
+            if bufferID:
+                self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
+                self.lock = 0
+        else:
+            self.interp.restartKernel()
+            
     def onBufferActivated(self, args):
         bufferID = args["bufferID"]
         if bufferID in self.bufferMarkerAction:
@@ -159,14 +169,18 @@ class pyPad:
                     self.runCodeAtCursor(moveCursor=False)
                 elif 0 <= pos < editor.getLength():
                     self.runCodeAtCursor(moveCursor=False, nonSelectedLine=iLineClick)
-
         self.middleButton = middleButton
-        if self.timerCount > 10:
+        if self.timerCount > self.timerCountFlush:
             if not self.lock:
-                err, result = self.interp.flush()
-                if result:
-                    self.outBuffer(result)
-        threading.Timer(0.025, self.onTimer).start()
+                if not self.interp.kernelBusy.isSet():
+                    try:
+                        err, result = self.interp.flush()
+                        if result:
+                            self.outBuffer(result)
+                    except:
+                        pass
+            self.timerCount = 0
+        threading.Timer(self.tTimer, self.onTimer).start()
 
     def textModified(self, args):
         '''When the marked text is modified the execution markers
@@ -194,16 +208,16 @@ class pyPad:
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
         if self.lock: return
-        self.lock = True
+        bufferID = notepad.getCurrentBufferID()                        
+        self.lock = bufferID
         lang = notepad.getLangType()
         filename = notepad.getCurrentFilename()
         if lang == Npp.LANGTYPE.TXT and '.' not in filename:
             notepad.setLangType(Npp.LANGTYPE.PYTHON)
         elif lang != Npp.LANGTYPE.PYTHON:
-            self.lock = False
+            self.lock = 0
             return        
 
-        bufferID = notepad.getCurrentBufferID()                        
         if nonSelectedLine is None:
             iSelStart = editor.getSelectionStart()
             iSelEnd = editor.getSelectionEnd()
@@ -223,7 +237,7 @@ class pyPad:
                 iLineStart = iFirstCodeLine
             if isEmpty:
                 self.hideMarkers(bufferID)
-                self.lock = False
+                self.lock = 0
                 return
             iLineStart = self.completeBlockStart(iLineStart, expectMoreLinesBefore)
 
@@ -245,11 +259,17 @@ class pyPad:
         else:
             # add more lines until the parser is happy or finds
             # a syntax error
+            
             while requireMore:
                 iEnd = editor.getLineEndPosition(iLineEnd)
                 block = editor.getTextRange(iStart, iEnd).rstrip()
                 if block:
-                    err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
+                    res = self.interp.tryCode(iLineStart, filename, block)
+                    if res is None: 
+                        self.lock = 0
+                        return
+                    else:
+                        err, requireMore, isValue = res
                 else: err, requireMore, isValue = None, True, False
                 if requireMore:
                     iCodeLineStart, iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd, -1)
@@ -291,7 +311,7 @@ class pyPad:
                 self.thread.start()
         if err:
             self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-            self.lock = False
+            self.lock = 0
 
     def getUncompleteLine(self, iPos):
         '''get the whole expression with the context of a
@@ -361,26 +381,32 @@ class pyPad:
         '''Thread of the running code in case the code is
         a value. When finished, the execution markers are
         set to the corresponding color.'''
-        err, result = self.interp.evaluate()
-        if not err:
-            self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
-            if result: self.stdout(result+'\n')
-        else:
-            self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-            self.outBuffer(result)
-        self.lock = False
+        res = self.interp.evaluate()
+        if res is not None:
+            err, result = res
+            if not err:
+                if self.lock:
+                    self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
+                if result: self.stdout(result+'\n')
+            else:
+                self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
+                self.outBuffer(result)
+        self.lock = 0
 
     def threadCode(self, bufferID):
         '''Thread of the running code in case the code is
         not a value. When finished, the execution markers are
         set to the corresponding color.'''
-        err, result = self.interp.execute()
-        if not err:
-            self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
-        else:
-            self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-        self.outBuffer(result)
-        self.lock = False
+        
+        res = self.interp.execute()
+        if res is not None:
+            err, result = res
+            if not err and self.lock:
+                self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
+            else:
+                self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
+            self.outBuffer(result)
+        self.lock = 0
 
     def preCalculateMarkers(self):
         if self.specialMarkers is None:
@@ -496,6 +522,13 @@ class pyPad:
         if iLines:
             self.setMarkers(min(iLines), max(iLines), iMarker=iMarker, bufferID=bufferID)
 
+    def hideMarkers(self, bufferID=None):
+        '''Hide all markers of the current buffer ID.'''
+        if bufferID is None: bufferID = notepad.getCurrentBufferID()
+        markers = self.markers.get(bufferID,[])
+        while markers:
+            editor.markerDeleteHandle(markers.pop())
+
     def stdout(self, s):
         console.editor.beginUndoAction()
         console.write(s)
@@ -528,15 +561,9 @@ class pyPad:
         console.editor.endUndoAction()
         console.editor.setReadOnly(0)
 
-    def hideMarkers(self, bufferID=None):
-        '''Hide all markers of the current buffer ID.'''
-        if bufferID is None: bufferID = notepad.getCurrentBufferID()
-        markers = self.markers.get(bufferID,[])
-        while markers:
-            editor.markerDeleteHandle(markers.pop())
-
     def onCalltipClick(self, args):
         '''When clicked on the calltip write the full calltip in the output console.'''
+        if self.lock or self.interp.kernelBusy.isSet(): return
         if self.activeCalltip == 'doc':# and args['position']==0:
             var, calltip = self.interp.getFullCallTip()
             head = '='*(40 - len(var)//2 - 3) + ' Info: ' + var + ' ' + '='*(40 - len(var)//2 - 3)
@@ -552,6 +579,7 @@ class pyPad:
     def onMouseDwell(self, args):
         '''Show a call tip window about the current content
         of a selected variable'''
+        if self.lock or self.interp.kernelBusy.isSet(): return
         if editor.callTipActive(): return
         p = editor.positionFromPoint(args['x'], args['y'])
         iStart = editor.getSelectionStart()
@@ -590,6 +618,7 @@ class pyPad:
         "." after objects: show auto completion list with properties and methods
         "[" after dict: show auto completion list with keys
         "(" after functions: insert template and display a call tip with the doc string.'''
+        if self.lock or self.interp.kernelBusy.isSet(): return
         if args['ch'] == 46 and args['code'] == 2001: # character "."
             iPos = editor.getCurrentPos()
             autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iPos))

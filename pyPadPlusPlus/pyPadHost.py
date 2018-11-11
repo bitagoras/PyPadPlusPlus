@@ -22,8 +22,13 @@ class interpreter:
         self.outBuffer = outBuffer
         clientPath = os.path.join(os.path.dirname(__file__), 'pyPadClient.py')
         self.StartCommand = pythonPath + ' -u ' + '"' + clientPath + '"'
-        
+        self.dataQueueOut = Queue.Queue()
+        self.dataQueueIn = Queue.Queue()
+        self.kernelBusy = threading.Event()
+        self.kernelAlive = threading.Event()
         self.startNewKernel()
+        self.thread = threading.Thread(name='communicationLoop', target=self.communicationLoop, args=())
+        self.thread.start()
         
     def startNewKernel(self):
         self.proc = subprocess.Popen(self.StartCommand,
@@ -31,49 +36,83 @@ class interpreter:
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         universal_newlines=True)
-
-        self.dataQueueOut = Queue.Queue()
-        self.dataQueueIn = Queue.Queue()
-        self.thread = threading.Thread(name='communicationLoop', target=self.communicationLoop, args=())
-        self.thread.start()
+        time.sleep(0.1)
         self.buffer = []
+        self.kernelAlive.set()
 
+    def restartKernel(self):
+        if self.kernelAlive.isSet():
+            self.kernelBusy.set()
+            self.kernelAlive.clear()
+            self.dataQueueOut.queue.clear()
+            self.dataQueueIn.queue.clear()
+            self.proc.terminate()
+            time.sleep(0.1)
+            self.startNewKernel()
+            time.sleep(0.1)
+            self.kernelAlive.set()
+            self.kernelBusy.clear()
+            print("Kernel restarted.")
+        
     def __del__(self):
+        self.kernelAlive.clear()
         self.stopProcess()
         
     def pipeQueue(self, id, data=()):
-        self.dataQueueOut.put((id, data))
-        return self.dataQueueIn.get()
+        if self.kernelAlive.isSet():
+            self.dataQueueOut.put((id, data))
+            return self.dataQueueIn.get()
+        else:
+            return None
 
+    def clearQueue(self):
+        while not self.dataQueueOut.empty():
+            self.dataQueueOut.queue.clear()
+            self.dataQueueIn.put(None)
+            
     def communicationLoop(self):
         while True:
+            self.kernelAlive.wait()
+        
+            # only if the queue is empty the flush thread should request data
+            if self.dataQueueOut.empty():
+                if self.kernelAlive.isSet():
+                    self.kernelBusy.clear()
+
             # from queue id and data of function
             id, dataToPipe = self.dataQueueOut.get()
+
+            # set communication loop to busy
+            self.kernelBusy.set()
             
             # write the id of the function
             self.proc.stdin.write(id)
             
-            # pickle the data for transmitting
-            toPipe = pickle.dumps(dataToPipe,-1)
-            
             # send data
-            self.proc.stdin.write(toPipe)
+            pickle.dump(dataToPipe, self.proc.stdin, -1)
             
             # flush channel for immidiate transfer
-            self.proc.stdin.flush()
+            if self.kernelAlive.isSet(): self.proc.stdin.flush()
 
             returnType = None
             while returnType != 'A':
             
                 # unpickle the received data
-                returnType, dataFromPipe = pickle.load(self.proc.stdout)
+                try:
+                    assert self.kernelAlive.isSet()
+                    returnType, dataFromPipe = pickle.load(self.proc.stdout)
+                except:
+                    self.dataQueueIn.put(None)
+                    returnType = None
+                    break
 
                 if returnType == 'B':
                     # unpickle the received buffer
                     self.outBuffer(dataFromPipe)
 
             # answer to queue
-            self.dataQueueIn.put(dataFromPipe)
+            if returnType is not None:
+                self.dataQueueIn.put(dataFromPipe)
 
     @toPipe('A')
     def flush(self): pass
@@ -85,7 +124,7 @@ class interpreter:
     def evaluate(self): pass
     
     @toPipe('D')
-    def execute(self): pass#, string=None): pass
+    def execute(self, string=None): pass
     
     @toPipe('E')
     def maxCallTip(self, value): pass

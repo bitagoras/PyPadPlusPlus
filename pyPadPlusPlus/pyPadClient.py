@@ -2,13 +2,19 @@
 # PyPadPlusPlus: Module running in Python subprocess
 #
 
-import sys, code, time
+import sys
+PY3 = sys.version_info[0] == 3
+import code, time
 from types import ModuleType
 import introspect  # Module for code introspection from the wxPython project
 from codeop import compile_command
 import traceback
 import textwrap
-import threading, Queue
+import threading
+if PY3:
+    import queue
+else:
+    import Queue as queue
 from copy import copy
 try:
    import cPickle as pickle
@@ -44,8 +50,6 @@ class PseudoFileOutBuffer:
     def writeStdErr(self, s):
         self.buffer.write(s, True)
 
-    def write(self, s): pass
-
 pipedFunctions = {}
 def fromPipe(symbol):
     def decorator(func):
@@ -67,7 +71,14 @@ class interpreter:
         self.userLocals = {}
         self.userLocals.update(globals())
         self.interp = code.InteractiveInterpreter(self.userLocals)
-
+        self.kernelBusy = threading.Event()
+        
+    def restartKernel(self):
+        self.userLocals = {}
+        self.userLocals.update(globals())
+        self.interp = code.InteractiveInterpreter(self.userLocals)
+        print("Kernel reset.")
+        
     @fromPipe('A')
     def flush(self):
         err = False
@@ -133,7 +144,6 @@ class interpreter:
         nMax = 2000  # max length
         cMax = 112  # max colums
         lMax = 14  # max lines
-        endLine = ''
         lines = []
         for l in value[:nMax].split('\n'):
             lines += textwrap.wrap(l, cMax)
@@ -245,8 +255,10 @@ def startLocalClient():
 
     interp = interpreter()
 
-    dataQueueOut = Queue.Queue()
-    dataQueueIn = Queue.Queue()
+    dataQueueOut = queue.Queue()
+    dataQueueIn = queue.Queue()
+    
+    stdin = interp.stdin.buffer if PY3 else interp.stdin
     
     def communicationLoop():
         while True:
@@ -257,8 +269,8 @@ def startLocalClient():
             alive.set()
             
             # unpickle the received data
-            dataFromPipe = pickle.load(interp.stdin)
-
+            dataFromPipe = pickle.load(stdin)
+            
             # to queue for execution in main thread
             dataQueueIn.put((command, dataFromPipe))
 
@@ -281,17 +293,6 @@ def startLocalClient():
             # send the resulting answer to the pipe
             interp.stdout.write(ret)
 
-    alive = threading.Event()
-    def watchdog(timeout=5):
-        time.sleep(10) # time to initialize
-        while alive.isSet():
-            alive.clear()
-            time.sleep(timeout)
-        dataQueueIn.put(('X', None))
-    
-    threadWatchdog = threading.Thread(name='watchdog', target=watchdog, args=())
-    threadWatchdog.start()
-    
     thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
     thread.start()
         
@@ -312,14 +313,11 @@ def startLocalClient():
         else:
             time.sleep(0.05)
 
-    isExecuting = False
-
     # endless loop in the client mode
     while thread.is_alive():
         while dataQueueIn.empty():
             wait()
         command, dataFromPipe = dataQueueIn.get()
-        if command == "X": break
         dataToPipe = pipedFunctions[command](interp, *dataFromPipe)
         dataQueueOut.put(dataToPipe)
 
