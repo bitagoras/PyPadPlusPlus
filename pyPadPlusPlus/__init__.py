@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "0.6"
+__version__ = "0.7"
 
 import Npp
 from Npp import editor, console, notepad
