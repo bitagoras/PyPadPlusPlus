@@ -3,11 +3,14 @@
 #%% Execution with Keyboard and Mouse
 
 # <Ctrl> + <Return> executes the smalles possible piece of code
-# that includes the line at or next to the cursor.
+# that includes the line at the cursor or next to the cursor.
 
 print "hello world"
 
-# Muli line commands are executed as a whole and can be started
+# The value of a single expression line will be printed
+1+2
+
+# Muliline commands are executed as a whole and can be started
 # from any line inside the indented block. A yellow line shows
 # which lines have been executed.
 
@@ -46,14 +49,21 @@ for i in 1,2,3,4,5:
 # A red line indicates an syntax or runtime error.
 # The python traceback error message is clickable.
 
+# find the syntax error
 a = [(1,13), (4,12),
-     (6,11), (2,15)   # syntax error
+     (6,11), (2,15),
+     (1,12), (5,7)),
      (1,12), (5,14)]
      
 def test(x):
-    print "We now divide 8 by", x
-    print "The result is", 8 / x
-test(0)  # runtime error
+    print 'We now divide', x, 'by zero:'
+    print 'The result is:'
+    print x / 0
+    print "Now you"
+    print 'removed the '
+    print 'runtime error'
+
+test(5)  # runtime error
 
 
 #%% Code completion and call tips
@@ -127,6 +137,8 @@ for i in 1,2,3:
     plt.fill_between(x, y+5*i-0.1*y-1, y+5*i+0.1*y+1, alpha=0.2)
 plt.show()
 
+# The next figure can be shown while the first is visible
+
 fig = plt.figure()
 n, (r0, r1) = 100, numpy.random.rand(2)
 for i in range(n):
@@ -135,6 +147,7 @@ for i in range(n):
     y = (1 - 0.9*t/n) * (numpy.sin(3.008*2*numpy.pi*t) + numpy.sin(1.5*numpy.pi*(t+r1)))
     plt.plot(x, y, color=plt.cm.plasma(float(i)/n), alpha=0.9, lw=0.8)
 plt.show()
+
 
 
 
