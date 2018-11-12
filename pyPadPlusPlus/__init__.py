@@ -42,7 +42,7 @@ class PseudoFileOut:
         self.write = write
     def write(self, s): pass
 class pyPad:
-    def __init__(self, externalPython, matplotlib_EventHandler=True):
+    def __init__(self, externalPython=None, matplotlib_EventHandler=True):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
@@ -55,7 +55,7 @@ class pyPad:
         sys.stdout.outp=PseudoFileOut(Npp.console.write)
 
         self.externalPython = bool(externalPython)
-        if externalPython:
+        if self.externalPython:
             # start syntax highligter
             EnhancedPythonLexer().main()
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
@@ -104,7 +104,7 @@ class pyPad:
         editor.autoCSetCancelAtStart(False)
         editor.autoCSetDropRestOfWord(True)
 
-        console.clear()
+        #console.clear()
         console.editor.setReadOnly(0)
 
         self.tTimer = 0.025
@@ -114,10 +114,11 @@ class pyPad:
 
         filename = notepad.getCurrentFilename()
         path = os.path.split(filename)[0]
+        print "test"
         if path:
             self.interp.execute('import os; os.chdir('+repr(path)+')')
+        print "test end"
         self.lock = 0
-        
         self.onTimer()  # start periodic timer to check output of process
         
     def onClose(self, args):

@@ -265,9 +265,6 @@ def startLocalClient():
             # receive the id of the function
             command = interp.stdin.read(1)
 
-            # set alive flag
-            alive.set()
-            
             # unpickle the received data
             dataFromPipe = pickle.load(stdin)
             
