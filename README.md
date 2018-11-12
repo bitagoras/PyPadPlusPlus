@@ -5,8 +5,6 @@ PyPadPlusPlus is a plugin for Notepad++ (https://notepad-plus-plus.org/) to inte
 
 #### Installation
 
-This plugin is a python script for the "Python Script" plugin for Notepad++.
-
 To install pyPadPlusPlus:
 * Install Python Script from https://github.com/bruderstein/PythonScript/releases/.
 * Download a release of PyPadPlusPlus and extract the files into the script folder of PythonScript:
