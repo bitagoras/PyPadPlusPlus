@@ -19,10 +19,7 @@ To install pyPadPlusPlus:
   *  `pyPadExecuteFix.py`
   *  `pyPadRestart.py`
 * Press OK and restart Notepad++ and go to menu "Settings / Shortcut mapper" and define in the tab "Plugin commands" the shortcuts:
-
-|Script              |Shortcut                     |
-|--------------------|-----------------------------|
-|pyPadExecute.py     |`<Ctrl> + <Enter>`           |
-|pyPadExecuteFix.py  |`<Shift> + <Ctrl> + <Enter>` |
-|pyPadClear.py       |`<Shift> + <Ctrl> + <C>`     |
-|pyPadRestart.py     |`<Alt> + <R>`                |
+  <br>`pyPadExecute.py     <Ctrl> + <Enter>`
+  <br>`pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
+  <br>`pyPadClear.py       <Shift> + <Ctrl> + <C>`
+  <br>`pyPadRestart.py     <Alt> + <R>`
