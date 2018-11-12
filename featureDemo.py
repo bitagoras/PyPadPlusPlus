@@ -3,9 +3,12 @@
 #%% Execution with Keyboard and Mouse
 
 # <Ctrl> + <Return> executes the smalles possible piece of code
-# that includes the line at or next to the cursor.
+# that includes the line at the cursor or next to the cursor.
 
 print "hello world"
+
+# the value of a single expression line will be printed
+1+2
 
 # Muli line commands are executed as a whole and can be started
 # from any line inside the indented block. A yellow line shows
@@ -51,9 +54,9 @@ a = [(1,13), (4,12),
      (1,12), (5,14)]
      
 def test(x):
-    print "We now divide 8 by", x
-    print "The result is", 8 / x
-test(0)  # runtime error
+    print 'We now divide', x, 'by zero:'
+    print 'The result is', x / 0
+test(5)  # runtime error
 
 
 #%% Code completion and call tips
@@ -126,6 +129,8 @@ for i in 1,2,3:
     plt.plot(x, y+5*i)
     plt.fill_between(x, y+5*i-0.1*y-1, y+5*i+0.1*y+1, alpha=0.2)
 plt.show()
+
+# The next figure can be shown while the first is visible
 
 fig = plt.figure()
 n, (r0, r1) = 100, numpy.random.rand(2)
