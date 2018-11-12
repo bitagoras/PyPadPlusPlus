@@ -104,7 +104,7 @@ class pyPad:
         editor.autoCSetCancelAtStart(False)
         editor.autoCSetDropRestOfWord(True)
 
-        #console.clear()
+        console.clear()
         console.editor.setReadOnly(0)
 
         self.tTimer = 0.025
@@ -114,10 +114,8 @@ class pyPad:
 
         filename = notepad.getCurrentFilename()
         path = os.path.split(filename)[0]
-        print "test"
         if path:
             self.interp.execute('import os; os.chdir('+repr(path)+')')
-        print "test end"
         self.lock = 0
         self.onTimer()  # start periodic timer to check output of process
         
