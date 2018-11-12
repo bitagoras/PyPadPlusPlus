@@ -56,7 +56,7 @@ a = [(1,13), (4,12),
      (1,12), (5,14)]
      
 def test(x):
-    print 'We now divide', x, 'by zero:'
+    print 'We now divide', x, 'by zero.'
     print 'The result is:'
     print x / 0
     print "Now you"
