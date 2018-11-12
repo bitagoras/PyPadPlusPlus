@@ -2,7 +2,7 @@
 # PyPadPlusPlus: Module running in Python subprocess
 #
 
-import sys
+import sys, os
 PY3 = sys.version_info[0] == 3
 import code, time
 from types import ModuleType
@@ -69,13 +69,12 @@ class interpreter:
         sys.stdout=self.stdOutBuff
         sys.stderr=self.stdErrBuff
         self.userLocals = {}
-        self.userLocals.update(globals())
         self.interp = code.InteractiveInterpreter(self.userLocals)
         self.kernelBusy = threading.Event()
+        os.chdir(os.path.expanduser("~"))
         
     def restartKernel(self):
         self.userLocals = {}
-        self.userLocals.update(globals())
         self.interp = code.InteractiveInterpreter(self.userLocals)
         print("Kernel reset.")
         
@@ -129,8 +128,10 @@ class interpreter:
     def execute(self, string=None):
         try:
             if type(string) is str:
+                # for non-user commands
                 exec(string, globals())
             else:
+                # for user commands
                 exec(self.code, self.interp.locals)
             err = False
         except:

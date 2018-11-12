@@ -71,7 +71,7 @@ class pyPad:
         editor.setTargetStart(0)
         self.specialMarkers = None
         self.bufferMarkerAction = {}
-        self.bufferPathAction = {}
+        self.lastActiveBufferID = -1
 
 		# Marker
         self.markerWidth = 3
@@ -112,12 +112,8 @@ class pyPad:
         self.timerCount = 0
         self.middleButton = 0
 
-        filename = notepad.getCurrentFilename()
-        path = os.path.split(filename)[0]
-        if path:
-            self.interp.execute('import os; os.chdir('+repr(path)+')')
         self.lock = 0
-        self.onTimer()  # start periodic timer to check output of process
+        self.onTimer()  # start periodic timer to check output of subprocess
         
     def onClose(self, args):
         self.__del__()
@@ -200,7 +196,7 @@ class pyPad:
                 for i in self.markers[bufferID]:
                     iLine = editor.markerLineFromHandle(i)
                     iLines.append(iLine)
-                if min(iLines) <= iCurrentLine <= max(iLines):
+                if len(iLines) > 0 and min(iLines) <= iCurrentLine <= max(iLines):
                     self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
                     
     def runCodeAtCursor(self, moveCursor=True, nonSelectedLine=None):
@@ -211,7 +207,7 @@ class pyPad:
         self.lock = bufferID
         lang = notepad.getLangType()
         filename = notepad.getCurrentFilename()
-        if lang == Npp.LANGTYPE.TXT and '.' not in filename:
+        if lang == Npp.LANGTYPE.TXT and '.' not in os.path.basename(filename):
             notepad.setLangType(Npp.LANGTYPE.PYTHON)
         elif lang != Npp.LANGTYPE.PYTHON:
             self.lock = 0
@@ -285,9 +281,14 @@ class pyPad:
             if err is not True: self.outBuffer(err)
 
         else:
+        
+            # Check if correct path is set 
+            if self.lastActiveBufferID != bufferID and '.' in os.path.basename(filename):
+                filePath = os.path.normpath(os.path.split(filename)[0])
+                self.interp.execute('os.chdir('+repr(filePath)+')')
+                self.lastActiveBufferID = bufferID
 
             # Start a thread to execute the code
-
             if moveCursor:
                 iNewPos = max(iPos, editor.positionFromLine(iLineEnd + 1))
                 editor.setSelectionStart(iNewPos)

@@ -86,7 +86,11 @@ class interpreter:
             self.kernelBusy.set()
             
             # write the id of the function
-            self.proc.stdin.write(id)
+            try:
+                self.proc.stdin.write(id)
+            except:
+                self.dataQueueIn.put(None)
+                continue
             
             # send data
             pickle.dump(dataToPipe, self.proc.stdin, -1)
@@ -102,8 +106,7 @@ class interpreter:
                     assert self.kernelAlive.isSet()
                     returnType, dataFromPipe = pickle.load(self.proc.stdout)
                 except:
-                    self.dataQueueIn.put(None)
-                    returnType = None
+                    dataFromPipe = None
                     break
 
                 if returnType == 'B':
@@ -111,8 +114,7 @@ class interpreter:
                     self.outBuffer(dataFromPipe)
 
             # answer to queue
-            if returnType is not None:
-                self.dataQueueIn.put(dataFromPipe)
+            self.dataQueueIn.put(dataFromPipe)
 
     @toPipe('A')
     def flush(self): pass
