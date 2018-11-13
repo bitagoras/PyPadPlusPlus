@@ -41,18 +41,17 @@ class interpreter:
         self.kernelAlive.set()
 
     def restartKernel(self):
-        if self.kernelAlive.isSet():
-            self.kernelBusy.set()
-            self.kernelAlive.clear()
-            self.dataQueueOut.queue.clear()
-            self.dataQueueIn.queue.clear()
-            self.proc.terminate()
-            time.sleep(0.1)
-            self.startNewKernel()
-            time.sleep(0.1)
-            self.kernelAlive.set()
-            self.kernelBusy.clear()
-            print("Kernel restarted.")
+        self.kernelBusy.set()
+        self.kernelAlive.clear()
+        self.dataQueueOut.queue.clear()
+        self.dataQueueIn.queue.clear()
+        self.proc.terminate()
+        time.sleep(0.1)
+        self.startNewKernel()
+        time.sleep(0.1)
+        self.kernelAlive.set()
+        self.kernelBusy.clear()
+        print("Kernel restarted.")
         
     def __del__(self):
         self.kernelAlive.clear()
@@ -90,6 +89,9 @@ class interpreter:
                 self.proc.stdin.write(id)
             except:
                 self.dataQueueIn.put(None)
+                print "Python kernel non-responding."
+                self.kernelAlive.clear()
+                self.kernelBusy.set()
                 continue
             
             # send data
