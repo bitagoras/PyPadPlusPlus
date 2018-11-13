@@ -276,8 +276,8 @@ class pyPad:
 
         if err is not None:
             if moveCursor:
-                editor.setSelectionStart(iPos)
-                editor.scrollCaret()
+                editor.setSelectionStart(iStart)
+                editor.scrollRange(iEnd, iStart)
             if err is not True: self.outBuffer(err)
 
         else:
