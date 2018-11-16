@@ -51,7 +51,7 @@ class interpreter:
         time.sleep(0.1)
         self.kernelAlive.set()
         self.kernelBusy.clear()
-        print("Kernel restarted.")
+        print("Python kernel restarted.")
         
     def __del__(self):
         self.kernelAlive.clear()
@@ -89,7 +89,7 @@ class interpreter:
                 self.proc.stdin.write(id)
             except:
                 self.dataQueueIn.put(None)
-                print "Python kernel non-responding."
+                print "Python kernel not responding."
                 self.kernelAlive.clear()
                 self.kernelBusy.set()
                 continue

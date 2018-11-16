@@ -142,6 +142,7 @@ class pyPad:
         else:
             self.interp.restartKernel()
         self.hideMarkers()
+        self.lastActiveBufferID = -1
             
     def onBufferActivated(self, args):
         bufferID = args["bufferID"]
