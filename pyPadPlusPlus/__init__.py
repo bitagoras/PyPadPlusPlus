@@ -65,7 +65,7 @@ class pyPad:
 
         self.thread = None
         self.threadMarker = None
-        self.lock = 1
+        self.bufferBusy = 1
         self.delayedMarker = False
         self.activeCalltip = None
         editor.setTargetStart(0)
@@ -107,12 +107,12 @@ class pyPad:
         console.clear()
         console.editor.setReadOnly(0)
 
-        self.tTimer = 0.025
+        self.tTimer = 0.05
         self.timerCountFlush = int(0.25 / self.tTimer)
         self.timerCount = 0
         self.middleButton = 0
 
-        self.lock = 0
+        self.bufferBusy = 0
         self.onTimer()  # start periodic timer to check output of subprocess
 
     def onClose(self, args):
@@ -134,11 +134,11 @@ class pyPad:
 
     def restartKernel(self):
         if self.externalPython:
-            bufferID = self.lock
+            bufferID = self.bufferBusy
             self.interp.restartKernel()
             if bufferID:
                 self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-                self.lock = 0
+                self.bufferBusy = 0
         else:
             self.interp.restartKernel()
         self.hideMarkers()
@@ -168,7 +168,7 @@ class pyPad:
                     self.runCodeAtCursor(moveCursor=False, nonSelectedLine=iLineClick)
         self.middleButton = middleButton
         if self.timerCount > self.timerCountFlush:
-            if not self.lock:
+            if not self.bufferBusy:
                 if not self.interp.kernelBusy.isSet():
                     try:
                         err, result = self.interp.flush()
@@ -184,7 +184,7 @@ class pyPad:
         will be hidden, except when the code is still running.'''
         if args['text'] != '':
             bufferID = notepad.getCurrentBufferID()
-            if self.markers.get(bufferID, None) is not None and not self.lock and len(self.markers[bufferID]) > 0:
+            if self.markers.get(bufferID, None) is not None and not self.bufferBusy and len(self.markers[bufferID]) > 0:
                 iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
                 iLines = []
                 for i in self.markers[bufferID]:
@@ -192,7 +192,7 @@ class pyPad:
                     iLines.append(iLine)
                 if min(iLines) <= iCurrentLine <= max(iLines):
                     self.hideMarkers(bufferID)
-            if self.markers.get(bufferID, None) is not None and self.lock and len(self.markers[bufferID]) > 0:
+            if self.markers.get(bufferID, None) is not None and self.bufferBusy and len(self.markers[bufferID]) > 0:
                 iCurrentLine = editor.lineFromPosition(editor.getCurrentPos())
                 iLines = []
                 for i in self.markers[bufferID]:
@@ -204,7 +204,7 @@ class pyPad:
     def runCodeAtCursor(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
-        if not self.lock:
+        if not self.bufferBusy:
 			self.thread = threading.Thread(target=self.runThread, args=(moveCursor, nonSelectedLine))
 			self.thread.start()
 
@@ -213,13 +213,13 @@ class pyPad:
         the current selection. Or execute one marked block.'''
 
         bufferID = notepad.getCurrentBufferID()
-        self.lock = bufferID
+        self.bufferBusy = bufferID
         lang = notepad.getLangType()
         filename = notepad.getCurrentFilename()
         if lang == Npp.LANGTYPE.TXT and '.' not in os.path.basename(filename):
             notepad.setLangType(Npp.LANGTYPE.PYTHON)
         elif lang != Npp.LANGTYPE.PYTHON:
-            self.lock = 0
+            self.bufferBusy = 0
             return
 
         if nonSelectedLine is None:
@@ -241,7 +241,7 @@ class pyPad:
                 iLineStart = iFirstCodeLine
             if isEmpty:
                 self.hideMarkers(bufferID)
-                self.lock = 0
+                self.bufferBusy = 0
                 return
             iLineStart = self.completeBlockStart(iLineStart, expectMoreLinesBefore)
 
@@ -270,7 +270,7 @@ class pyPad:
                 if block:
                     res = self.interp.tryCode(iLineStart, filename, block)
                     if res is None:
-                        self.lock = 0
+                        self.bufferBusy = 0
                         return
                     else:
                         err, requireMore, isValue = res
@@ -316,7 +316,7 @@ class pyPad:
 				if res is not None:
 					err, result = res
 					if not err:
-						if self.lock:
+						if self.bufferBusy:
 							self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
 						if result: self.stdout(result+'\n')
 					else:
@@ -327,7 +327,7 @@ class pyPad:
 				res = self.interp.execute()
 				if res is not None:
 					err, result = res
-					if not err and self.lock:
+					if not err and self.bufferBusy:
 						self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
 					else:
 						self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
@@ -336,7 +336,7 @@ class pyPad:
         if err:
             self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
 
-        self.lock = 0
+        self.bufferBusy = 0
 
     def getUncompleteLine(self, iPos):
         '''get the whole expression with the context of a
@@ -490,7 +490,7 @@ class pyPad:
             self.onMarkerTimer(init=True)
 
     def onMarkerTimer(self, init=False):
-        if self.lock:
+        if self.bufferBusy:
             if init:
                 self.markerCycle = 0
             else:
@@ -557,7 +557,7 @@ class pyPad:
 
     def onCalltipClick(self, args):
         '''When clicked on the calltip write the full calltip in the output console.'''
-        if self.lock or self.interp.kernelBusy.isSet(): return
+        if self.bufferBusy or self.interp.kernelBusy.isSet(): return
         if self.activeCalltip == 'doc':# and args['position']==0:
             var, calltip = self.interp.getFullCallTip()
             head = '='*(40 - len(var)//2 - 3) + ' Info: ' + var + ' ' + '='*(40 - len(var)//2 - 3)
@@ -573,7 +573,7 @@ class pyPad:
     def onMouseDwell(self, args):
         '''Show a call tip window about the current content
         of a selected variable'''
-        if self.lock or self.interp.kernelBusy.isSet(): return
+        if self.bufferBusy or self.interp.kernelBusy.isSet(): return
         if editor.callTipActive(): return
         p = editor.positionFromPoint(args['x'], args['y'])
         iStart = editor.getSelectionStart()
@@ -612,7 +612,7 @@ class pyPad:
         "." after objects: show auto completion list with properties and methods
         "[" after dict: show auto completion list with keys
         "(" after functions: insert template and display a call tip with the doc string.'''
-        if self.lock or self.interp.kernelBusy.isSet(): return
+        if self.bufferBusy or self.interp.kernelBusy.isSet(): return
         if args['ch'] == 46 and args['code'] == 2001: # character "."
             iPos = editor.getCurrentPos()
             autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iPos))

@@ -73,7 +73,8 @@ class car:
     nWheels = 4
     speed = 100
     color = "red"
-car  # add a point "." after the variable to display the list
+# add a point "." after the variable to display the list
+car
 
 # Code completion is also available for dictionarys.
 # This also works for h5py file objects.
@@ -82,13 +83,15 @@ bike = {
     'speed': 20,
     'color': "blue"
     }
-bike  # add a bracket "[" after the variable to display the list
+# add a bracket "[" after the variable to display the list
+bike
 
 # add a parenthesis "(" after the function to display the doc string
 def twice(x, factor=2):
     """This function returns twice or more what it gets"""
     return factor*x
-twice  # add a parenthesis "(" after the function to display the doc string
+# add a parenthesis "(" after the function to display the doc string
+twice
 
 #%% Tool tips
 
