@@ -39,7 +39,7 @@ first line or above"""
 
 #%% Marker lines
 
-# An animated dark line indicates when python is busy.
+# An animated dark line indicates that python is busy.
 import time
 for i in 1,2,3,4,5:
     print "wait for", i, '*'*i

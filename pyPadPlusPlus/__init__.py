@@ -49,7 +49,7 @@ class pyPad:
         editor.grabFocus()
         self.windowHandle = win32gui.GetForegroundWindow()
         self.matplotlib_EventHandler = matplotlib_EventHandler
-        
+
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
         sys.stdout.outp=PseudoFileOut(Npp.console.write)
@@ -96,7 +96,7 @@ class pyPad:
         notepad.callback(self.onBufferActivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
         notepad.clearCallbacks([Npp.NOTIFICATION.FILECLOSED])
         notepad.callback(self.onClose, [Npp.NOTIFICATION.FILECLOSED])
-        
+
         editor.callTipSetBack((255,255,225))
         editor.autoCSetSeparator(ord('\t'))
         editor.autoCSetIgnoreCase(False)
@@ -114,10 +114,10 @@ class pyPad:
 
         self.lock = 0
         self.onTimer()  # start periodic timer to check output of subprocess
-        
+
     def onClose(self, args):
         self.__del__()
-        
+
     def __del__(self):
         '''Clear call backs on exit.'''
         try: self.interp.proc.terminate()
@@ -143,13 +143,13 @@ class pyPad:
             self.interp.restartKernel()
         self.hideMarkers()
         self.lastActiveBufferID = -1
-            
+
     def onBufferActivated(self, args):
         bufferID = args["bufferID"]
         if bufferID in self.bufferMarkerAction:
             iMarker = self.bufferMarkerAction.pop(bufferID)
             self.changeMarkers(iMarker, bufferID)
-            
+
     def onTimer(self):
         self.timerCount += 1
         middleButton = win32api.GetKeyState(win32con.VK_MBUTTON)
@@ -200,12 +200,19 @@ class pyPad:
                     iLines.append(iLine)
                 if len(iLines) > 0 and min(iLines) <= iCurrentLine <= max(iLines):
                     self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
-                    
+
     def runCodeAtCursor(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
-        if self.lock: return
-        bufferID = notepad.getCurrentBufferID()                        
+        if not self.lock:
+			self.thread = threading.Thread(target=self.runThread, args=(moveCursor, nonSelectedLine))
+			self.thread.start()
+
+    def runThread(self, moveCursor=True, nonSelectedLine=None):
+        '''Executes the smallest possible code element for
+        the current selection. Or execute one marked block.'''
+
+        bufferID = notepad.getCurrentBufferID()
         self.lock = bufferID
         lang = notepad.getLangType()
         filename = notepad.getCurrentFilename()
@@ -213,7 +220,7 @@ class pyPad:
             notepad.setLangType(Npp.LANGTYPE.PYTHON)
         elif lang != Npp.LANGTYPE.PYTHON:
             self.lock = 0
-            return        
+            return
 
         if nonSelectedLine is None:
             iSelStart = editor.getSelectionStart()
@@ -256,13 +263,13 @@ class pyPad:
         else:
             # add more lines until the parser is happy or finds
             # a syntax error
-            
+
             while requireMore:
                 iEnd = editor.getLineEndPosition(iLineEnd)
                 block = editor.getTextRange(iStart, iEnd).rstrip()
                 if block:
                     res = self.interp.tryCode(iLineStart, filename, block)
-                    if res is None: 
+                    if res is None:
                         self.lock = 0
                         return
                     else:
@@ -273,7 +280,7 @@ class pyPad:
                     if iEnd == -1:
                         iLineEnd = iLineStart
                         break
-                        
+
         self.setMarkers(iLineStart, iLineEnd, block, iMarker=(self.m_active if not err else self.m_error), bufferID=bufferID)
 
         if err is not None:
@@ -283,8 +290,8 @@ class pyPad:
             if err is not True: self.outBuffer(err)
 
         else:
-        
-            # Check if correct path is set 
+
+            # Check if correct path is set
             if self.lastActiveBufferID != bufferID and '.' in os.path.basename(filename):
                 filePath = os.path.normpath(os.path.split(filename)[0])
                 self.interp.execute('os.chdir('+repr(filePath)+')')
@@ -298,22 +305,38 @@ class pyPad:
                 if iNewPos >= iDocEnd and iLineEnd == editor.getLineCount()-1:
                     editor.newLine()
                 editor.scrollCaret()
-                
+
             if self.matplotlib_EventHandler:
                 if 'matplotlib' in block:
                     self.interp.execute(init_matplotlib_EventHandler)
                     self.matplotlib_EventHandler = False
-                
-            if isValue:
-                self.thread = threading.Thread(name='threadValue', target=self.threadValue, args=(bufferID,))
-            else:
-                self.thread = threading.Thread(name='threadCode', target=self.threadCode, args=(bufferID,))
 
-            if not err:
-                self.thread.start()
+            if isValue:
+				res = self.interp.evaluate()
+				if res is not None:
+					err, result = res
+					if not err:
+						if self.lock:
+							self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
+						if result: self.stdout(result+'\n')
+					else:
+						self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
+						self.outBuffer(result)
+
+            else:
+				res = self.interp.execute()
+				if res is not None:
+					err, result = res
+					if not err and self.lock:
+						self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
+					else:
+						self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
+					self.outBuffer(result)
+
         if err:
             self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-            self.lock = 0
+
+        self.lock = 0
 
     def getUncompleteLine(self, iPos):
         '''get the whole expression with the context of a
@@ -378,37 +401,6 @@ class pyPad:
                 iLastCodeLine = iLine
             iLine += 1
         yield iFirstCodeLine, iLastCodeLine, isEmpty, expectMoreLinesBefore
-
-    def threadValue(self, bufferID):
-        '''Thread of the running code in case the code is
-        a value. When finished, the execution markers are
-        set to the corresponding color.'''
-        res = self.interp.evaluate()
-        if res is not None:
-            err, result = res
-            if not err:
-                if self.lock:
-                    self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
-                if result: self.stdout(result+'\n')
-            else:
-                self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-                self.outBuffer(result)
-        self.lock = 0
-
-    def threadCode(self, bufferID):
-        '''Thread of the running code in case the code is
-        not a value. When finished, the execution markers are
-        set to the corresponding color.'''
-        
-        res = self.interp.execute()
-        if res is not None:
-            err, result = res
-            if not err and self.lock:
-                self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
-            else:
-                self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-            self.outBuffer(result)
-        self.lock = 0
 
     def preCalculateMarkers(self):
         if self.specialMarkers is None:
