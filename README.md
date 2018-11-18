@@ -26,5 +26,4 @@ To install pyPadPlusPlus:
   
   ##
   
-  <p align="center"><img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/pyPadDemo.gif"></p>
-  
+<img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/pyPadDemo.gif" width="684" height="636">  
