@@ -201,11 +201,9 @@ class interpreter:
         try:
             autoCompleteList = dir(eval(element, self.interp.locals))
             if len(autoCompleteList) > 0:
-                #autoCompleteList = '\t'.join(sorted([i for i in autoCompleteList if not i.startswith('_')]) + \
-                #        sorted([i for i in autoCompleteList if i.startswith('_')]))
-                # The scintilla option for unordered lists seems not to work:
-                #     editor.autoCSetOrder(2)
-                autoCompleteList = '\t'.join(sorted(autoCompleteList))
+                #autoCompleteList = '\t'.join(sorted(autoCompleteList))
+                autoCompleteList = '\t'.join(sorted([i for i in autoCompleteList if not i.startswith('_')],\
+                        key=lambda s: s.lower()) + sorted([i for i in autoCompleteList if i.startswith('_')]))
         except:
             autoCompleteList = None
         return autoCompleteList

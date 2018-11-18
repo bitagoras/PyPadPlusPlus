@@ -630,7 +630,7 @@ class pyPad:
                 editor.autoCSetSeparator(ord('\t'))
                 editor.autoCSetIgnoreCase(False)
                 editor.autoCSetCaseInsensitiveBehaviour(False)
-                editor.autoCSetOrder(0)
+                editor.autoCSetOrder(2)
                 editor.autoCSetDropRestOfWord(True)
                 editor.autoCShow(0, autoCompleteList)
         elif args['ch'] == 40 and args['code'] == 2001: # character "("
