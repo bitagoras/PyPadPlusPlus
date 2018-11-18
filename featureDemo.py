@@ -44,7 +44,7 @@ import time
 for i in 1,2,3,4,5:
     print "wait for", i, '*'*i
     time.sleep(1)
-    # you can interrupt and restart the kernel with <Alt> - <R>
+    # you can interrupt and restart the kernel with <Alt> + <R>
 
 # A red line indicates an syntax or runtime error.
 # The python traceback error message is clickable.
@@ -103,7 +103,7 @@ var4 = "test"
 # Select each variable (double click) and hover with the mouse.
 # The type and string representation will be shown in a tooltip
 # When clicking at the tooltip the full content is printed in
-# the console. Use <Ctrl> - <Z> in the console to remove it again.
+# the console. Use <Ctrl> + <Z> in the console to remove it again.
 var1, var2, var3, var4, test, time
 
 # Select the "True" and click at the tooltip to change to "False"
@@ -113,12 +113,12 @@ swich = True
 #%% Console
 
 # The console window can be cleaned with the selected keyboard short cut
-# <Ctrl> - <Shift> - <C>
+# <Ctrl> + <Shift> + <C>
 
-# When the console is closed, it can be restored by <Ctrl> - <Alt> - <C>
+# When the console is closed, it can be restored by <Ctrl> + <Alt> + <C>
 
 # The console has an undo buffer. Print some lines, click in the console
-# and press undo (<Ctrl> - <Z>) to unto the print.
+# and press undo (<Ctrl> + <Z>) to unto the print.
 print '1.', multiline
 print '2.', multiline
 print '3.', multiline
