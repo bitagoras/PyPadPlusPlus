@@ -24,3 +24,5 @@ To install pyPadPlusPlus:
   * `pyPadRestart.py     <Alt> + <R>`
   * `codeSnippetsLog.py` <Alt> + <S>` 
   
+  <p align="center"><img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/pyPadDemo.gif"></p>
+  
