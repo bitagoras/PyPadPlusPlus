@@ -28,6 +28,6 @@ To install pyPadPlusPlus:
   * `pyPadRestart.py     <Alt> + <R>`
   * `codeSnippetsLog.py  <Alt> + <S>`
 * If you want to use the Python installation of you system, open the file 
-  `notepad++\plugins\PythonScript\scripts\` and set the variable `pythonPath = ` to the path of `pythonw.exe`.
+  `notepad++\plugins\PythonScript\scripts\` and set the variable `pythonPath` to the path of `pythonw.exe`.
 
   
