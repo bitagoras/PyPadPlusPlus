@@ -14,15 +14,15 @@ To install pyPadPlusPlus:
 * Select "Machine Scripts" and add the scripts to Menu items:
   * `pyPadClear.py` clears the console output
   * `pyPadExecute.py` executes the current line or selection
-  * `pyPadExecuteFix.py` executes and keeps the cursor at the position
+  * `pyPadExecuteFix.py` same as pyPadExecute but keeps the cursor at its position
   * `pyPadRestart.py`  restarts the python kernel or cleans the variables
-  * `codeSnippetsLog.py`  optional: saves selected code to a files or loads the file
+  * `codeSnippetsLog.py`  optional: saves selected code to a files or loads the file when non is selected
 * Press OK, restart Notepad++ and go to menu "Settings / Shortcut mapper" and define in the tab "Plugin commands" the shortcuts (unset existing shortcuts in case of conflict):
   * `pyPadExecute.py     <Ctrl> + <Enter>`
   * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
   * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
   * `pyPadRestart.py     <Alt> + <R>`
-  * `codeSnippetsLog.py` <Alt> + <S>` 
+  * `codeSnippetsLog.py  <Alt> + <S>` 
   
   ##
   
