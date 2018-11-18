@@ -3,11 +3,11 @@
 #
 
 # Set the path to pythonw.exe, e.g. "C:\\programs\\Anaconda2\\pythonw.exe".
-# If pythonPath is None, the internal python of Notepad++ PythonScript 
+# If pythonPath is None, the internal python of Notepad++ PythonScript
 # is used. Some features are only available for the external python kernel.
-# Python 3 is not supported, only Python 2. 
+# Python 3 is not supported, only Python 2.
 
-pythonPath = None
+pythonPath = "C:\\prog\\Anaconda2\\pythonw.exe"
 
 # To use multiple interactive matplotlib windows, pyPadPlusPlus
 # runs an internal matplotlib event handler during idle time.
