@@ -16,13 +16,15 @@ To install pyPadPlusPlus:
   * `pyPadExecute.py` executes the current line or selection
   * `pyPadExecuteFix.py` same as pyPadExecute but keeps the cursor at its position
   * `pyPadRestart.py`  restarts the python kernel or cleans the variables
-  * `codeSnippetsLog.py`  optional: saves selected code to a files or loads the file when non is selected
 * Press OK, restart Notepad++ and go to menu "Settings / Shortcut mapper" and define in the tab "Plugin commands" the shortcuts (unset existing shortcuts in case of conflict):
   * `pyPadExecute.py     <Ctrl> + <Enter>`
   * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
   * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
   * `pyPadRestart.py     <Alt> + <R>`
-  * `codeSnippetsLog.py  <Alt> + <S>` 
+
+Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you want to remember but you don't know where to store it. Just select any piece of code and press the selected keyboard shortcut (e.g. `<Alt> + <S>`). The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can use this function to log your finding. Some month later when you have a déjà vu at the same problem you can have a look in the code-snippets log file.
+  * `codeSnippetsLog.py     <Alt> + <S>`
+
   
   ##
   
