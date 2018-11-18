@@ -11,7 +11,7 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 
 To install pyPadPlusPlus:
 * Install Python Script from https://github.com/bruderstein/PythonScript/releases/.
-* Download a release of PyPadPlusPlus and extract the files into the script folder of PythonScript:
+* Download the latest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) of PyPadPlusPlus and extract the files into the script folder of PythonScript:
   <br>`notepad++\plugins\PythonScript\scripts\`
 * Open the file `pyPadStart.py` and set `pythonPath` to the path of your the pythonw.exe file.
 * Start Notepad++ and go to the menu "Plugins / Python Script / Configuration..."
@@ -27,3 +27,7 @@ To install pyPadPlusPlus:
   * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
   * `pyPadRestart.py     <Alt> + <R>`
   * `codeSnippetsLog.py  <Alt> + <S>`
+* If you want to use the Python installation of you system, open the file  
+  <br>`notepad++\plugins\PythonScript\scripts\`
+  <br>and enter the path
+  
