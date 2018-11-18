@@ -5,11 +5,28 @@ PyPadPlusPlus is a plugin for Notepad++ (https://notepad-plus-plus.org/) to inte
 
 Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you want to remember but you don't know where to store it. Just select any piece of code and press the keyboard shortcut (e.g. `<Alt> + <S>`). The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can use this function to log your finding in this "Python diary". Some month later when you have a déjà vu at the same problem you can have a look in the code-snippets log file.
 
-## <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/pyPadDemo.gif">  
+  <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/pyPadDemo.gif">  
+
+#### Features
+
+* Run Python code line by line
+* Run selected Python
+* Run line or selection with middle mouse button
+* Run blocks of python code defined by `#%%` comments
+* Code completion for run-time defined object properties
+* Code completion for run-time defined dictionary keys
+* Code completion for run-time defined function calls
+* Calltip popup for function calls
+* Object inspection for selected items with mouse hover
+* Color marker for executed lines
+* Animated color marker for active code lines
+* Internal or external Python distribution
+* Reset and restart Python kernel (e.g. when stuck in endless loop)
+* Matplotlib event handler to hold multiple active plot windows
 
 #### Installation
 
-To install pyPadPlusPlus:
+To install pyPadPlusPlus, several steps are required:
 * Install Python Script from https://github.com/bruderstein/PythonScript/releases/.
 * Download the latest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) of PyPadPlusPlus and extract the files into the script folder of PythonScript:
   <br>`notepad++\plugins\PythonScript\scripts\`
@@ -29,5 +46,3 @@ To install pyPadPlusPlus:
   * `codeSnippetsLog.py  <Alt> + <S>`
 * If you want to use the Python installation of you system, open the file 
   `notepad++\plugins\PythonScript\scripts\` and set the variable `pythonPath` to the path of `pythonw.exe`.
-
-  
