@@ -5,6 +5,8 @@ PyPadPlusPlus is a plugin for Notepad++ (https://notepad-plus-plus.org/) to inte
 
 Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you want to remember but you don't know where to store it. Just select any piece of code and press the keyboard shortcut (e.g. `<Alt> + <S>`). The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can use this function to log your finding in this "Python diary". Some month later when you have a déjà vu at the same problem you can have a look in the code-snippets log file.
 
+## <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/pyPadDemo.gif">  
+
 #### Installation
 
 To install pyPadPlusPlus:
@@ -25,7 +27,3 @@ To install pyPadPlusPlus:
   * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
   * `pyPadRestart.py     <Alt> + <R>`
   * `codeSnippetsLog.py  <Alt> + <S>`
-  
-  ##
-  
-<img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/pyPadDemo.gif">  
