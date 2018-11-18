@@ -13,13 +13,14 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 * Run selected Python
 * Run line or selection with middle mouse button
 * Run blocks of python code defined by `#%%` comments
-* Code completion for run-time defined object properties
-* Code completion for run-time defined dictionary keys
-* Code completion for run-time defined function calls
+* Code completion for run-time defined object properties, dictionary keys, function calls
 * Calltip popup for function calls
+* Calltip popup to switch between `True` and `False`
+* Click on calltip shows full text in output console
+* Output console has an undo buffer
 * Object inspection for selected items with mouse hover
-* Color marker for executed lines
-* Animated color marker for active code lines
+* Color marker to highlight last executed lines
+* Animated color marker for active lines
 * Internal or external Python distribution
 * Reset and restart Python kernel (e.g. when stuck in endless loop)
 * Matplotlib event handler to hold multiple active plot windows
