@@ -89,7 +89,7 @@ class interpreter:
                 self.proc.stdin.write(id)
             except:
                 self.dataQueueIn.put(None)
-                print "Python kernel not responding."
+                print("Python kernel not responding.")
                 self.kernelAlive.clear()
                 self.kernelBusy.set()
                 continue

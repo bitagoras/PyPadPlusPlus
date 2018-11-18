@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "0.7"
+__version__ = "0.8"
 
 import Npp
 from Npp import editor, console, notepad
@@ -57,10 +57,12 @@ class pyPad:
         self.externalPython = bool(externalPython)
         if self.externalPython:
             # start syntax highligter
-            EnhancedPythonLexer().main()
+            self.lexer = EnhancedPythonLexer()
+            self.lexer.main()
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
         else:
             # syntax highligter could slow down notepad++ in this mode
+            self.lexer = None
             self.interp = pyPadClient.interpreter()
 
         self.thread = None
@@ -83,20 +85,8 @@ class pyPad:
         for iMarker in self.m_active, self.m_error, self.m_finish:
             self.drawMarker(iMarker)
 
-        editor.setMouseDwellTime(300)
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
-        editor.callback(self.onCalltipClick, [Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CHARADDED])
-        editor.callback(self.onAutocomplete, [Npp.SCINTILLANOTIFICATION.CHARADDED])
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.DWELLSTART])
-        editor.callback(self.onMouseDwell, [Npp.SCINTILLANOTIFICATION.DWELLSTART])
-        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
-        editor.callback(self.textModified, [Npp.SCINTILLANOTIFICATION.MODIFIED])
-        notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
-        notepad.callback(self.onBufferActivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
-        notepad.clearCallbacks([Npp.NOTIFICATION.FILECLOSED])
-        notepad.callback(self.onClose, [Npp.NOTIFICATION.FILECLOSED])
-
+        self.setCallbacks()
+            
         editor.callTipSetBack((255,255,225))
         editor.autoCSetSeparator(ord('\t'))
         editor.autoCSetIgnoreCase(False)
@@ -115,6 +105,28 @@ class pyPad:
         self.bufferBusy = 0
         self.onTimer()  # start periodic timer to check output of subprocess
 
+    def clearCallbacks(self):
+        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
+        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CHARADDED])
+        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.DWELLSTART])
+        editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
+        notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
+        if self.lexer:
+            notepad.clearCallbacks([Npp.SCINTILLANOTIFICATION.UPDATEUI])
+            notepad.clearCallbacks([Npp.NOTIFICATION.LANGCHANGED])
+    
+    def setCallbacks(self):
+        self.clearCallbacks()
+        editor.setMouseDwellTime(300)
+        editor.callback(self.onCalltipClick, [Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
+        editor.callback(self.onAutocomplete, [Npp.SCINTILLANOTIFICATION.CHARADDED])
+        editor.callback(self.onMouseDwell, [Npp.SCINTILLANOTIFICATION.DWELLSTART])
+        editor.callback(self.textModified, [Npp.SCINTILLANOTIFICATION.MODIFIED])
+        notepad.callback(self.onBufferActivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
+        if self.lexer:
+            editor.callbackSync(self.lexer.on_updateui, [Npp.SCINTILLANOTIFICATION.UPDATEUI])
+            notepad.callback(self.lexer.on_langchanged, [Npp.NOTIFICATION.LANGCHANGED])
+        
     def onClose(self, args):
         self.__del__()
 
@@ -122,15 +134,7 @@ class pyPad:
         '''Clear call backs on exit.'''
         try: self.interp.proc.terminate()
         except: pass
-        try:
-            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
-            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CHARADDED])
-            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.DWELLSTART])
-            editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
-            notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
-            notepad.clearCallbacks([Npp.NOTIFICATION.FILEBEFORECLOSE])
-        except:
-            pass
+        self.clearCallbacks()
 
     def restartKernel(self):
         if self.externalPython:
@@ -143,12 +147,15 @@ class pyPad:
             self.interp.restartKernel()
         self.hideMarkers()
         self.lastActiveBufferID = -1
+        self.setCallbacks()
 
     def onBufferActivated(self, args):
         bufferID = args["bufferID"]
         if bufferID in self.bufferMarkerAction:
             iMarker = self.bufferMarkerAction.pop(bufferID)
             self.changeMarkers(iMarker, bufferID)
+        if self.lexer:
+            self.lexer.on_bufferactivated(args)
 
     def onTimer(self):
         self.timerCount += 1
@@ -582,18 +589,20 @@ class pyPad:
             iLineStart = editor.positionFromLine(editor.lineFromPosition(iStart))
             var = editor.getTextRange(iStart, iEnd)
             line = editor.getTextRange(iLineStart, iEnd)
-            try:
-                if var == '.':
-                    autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iStart+1))
-                    if autoCompleteList:
-                        editor.autoCSetSeparator(ord('\t'))
-                        editor.autoCSetIgnoreCase(False)
-                        editor.autoCSetCaseInsensitiveBehaviour(False)
-                        editor.autoCSetOrder(0)
-                        editor.autoCSetDropRestOfWord(True)
-                        editor.autoCShow(0, autoCompleteList)
-                else:
-                    element, nHighlight, calltip = self.interp.getCallTip(line, var)
+            #try:
+            if var == '.':
+                autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iStart+1))
+                if autoCompleteList:
+                    editor.autoCSetSeparator(ord('\t'))
+                    editor.autoCSetIgnoreCase(False)
+                    editor.autoCSetCaseInsensitiveBehaviour(False)
+                    editor.autoCSetOrder(0)
+                    editor.autoCSetDropRestOfWord(True)
+                    editor.autoCShow(0, autoCompleteList)
+            else:
+                ret = self.interp.getCallTip(line, var)
+                if ret:
+                    element, nHighlight, calltip = ret
                     if element == var =='False':
                         self.activeCalltip = False
                         editor.callTipShow(iStart, 'set to True')
@@ -604,8 +613,9 @@ class pyPad:
                         self.activeCalltip = 'doc'
                         editor.callTipShow(iStart, ''.join(calltip))
                         editor.callTipSetHlt(0, int(nHighlight))
-            except:
-                pass
+            # except Exception as e:
+                # raise e
+                # pass
 
     def onAutocomplete(self, args):
         '''Check if auto complete data can be added and displayed:
@@ -647,28 +657,12 @@ class pyPad:
                 editor.autoCShow(0, autoCompleteList)
 
 
-# lexer for special comments "# %%" for block execution
-
-# ensure that only a single instance is used to prevent getting
-# multiple callbacks executed
-class SingletonEnhancedPythonLexer(type):
-    _instance = None
-    def __call__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(SingletonEnhancedPythonLexer, cls).__call__(*args, **kwargs)
-        return cls._instance
-
-# main class
+# lexer for special comments "#%%" for block execution
 class EnhancedPythonLexer(object):
-
-    __metaclass__ = SingletonEnhancedPythonLexer
-
     def __init__(self):
-        editor.callbackSync(self.on_updateui, [Npp.SCINTILLANOTIFICATION.UPDATEUI])
-        notepad.callback(self.on_langchanged, [Npp.NOTIFICATION.LANGCHANGED])
-        notepad.callback(self.on_bufferactivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
         self.__is_lexer_doc = False
         self.get_lexer_name = lambda: notepad.getLanguageName(notepad.getLangType())
+        self.indicator = 0
 
     @staticmethod
     def paint_it(indicator, pos, length):
@@ -680,11 +674,11 @@ class EnhancedPythonLexer(object):
         line_number = editor.getFirstVisibleLine()
         start_position = editor.positionFromLine(line_number)
         end_position = editor.getLineEndPosition(line_number + editor.linesOnScreen())
-        editor.setIndicatorCurrent(0)
+        editor.setIndicatorCurrent(self.indicator)
         editor.indicatorClearRange(start_position, end_position-start_position)
-        indicator = 0
+        
         flag = 0
-        editor.research('^# ?%%(.*)$', lambda m: self.paint_it(indicator, m.span(flag)[0],
+        editor.research('^# ?%%(.*)$', lambda m: self.paint_it(self.indicator, m.span(flag)[0],
                 m.span(flag)[1] - m.span(flag)[0]), 0, start_position, end_position)
 
     def set_lexer_doc(self,bool_value):
@@ -706,10 +700,7 @@ class EnhancedPythonLexer(object):
 
     def main(self):
         self.lexer_name = 'Python'
-        indicator = 0
-        editor.indicSetFore(indicator, (80, 160, 120))
-        editor.indicSetStyle(indicator, Npp.INDICATORSTYLE.COMPOSITIONTHICK)
-        #editor.indicSetStyle(indicator, INDICATORSTYLE.ROUNDBOX)
-
+        editor.indicSetFore(self.indicator, (80, 160, 120))
+        editor.indicSetStyle(self.indicator, Npp.INDICATORSTYLE.COMPOSITIONTHICK)
         self.set_lexer_doc(True)
         self.style()
