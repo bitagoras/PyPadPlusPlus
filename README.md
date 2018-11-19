@@ -1,9 +1,9 @@
 # PyPadPlusPlus
 ### Notepad++ plugin for interactive Python development
 
-PyPadPlusPlus is a plugin for Notepad++ (https://notepad-plus-plus.org/) to interactivly work with Python. You can run your Python script interactively line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Ctrl> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by a comment starting with `#%%`. With the mouse wheel button any selected code can be executed with one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. The autocompletion list for objects and dictionaries allows you to explore the current elements.
+PyPadPlusPlus is a plugin for Notepad++ (https://notepad-plus-plus.org/) to interactivly work with Python. You can run your Python script interactively line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by a comment starting with `#%%`. You have allways the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can executed any selected code or single line with one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of an element.
 
-Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you want to remember but you don't know where to store it. Just select any piece of code and press the keyboard shortcut (e.g. `<Alt> + <S>`). The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can use this function to log your finding in this "Python diary". Some month later when you have a déjà vu at the same problem you can have a look in the code-snippets log file.
+Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you like to remember but you don't know where to store it. Just select any piece of code and press the keyboard shortcut (e.g. `<Alt> + <S>`). The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can use this function to log your finding in this "Python diary". Some month later when you have a déjà vu at the same problem you can have a look in the code-snippets log file. You can run in directly from this file.
 
   <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/demo/pyPadDemo.gif">  
 
@@ -40,10 +40,13 @@ To install pyPadPlusPlus, several steps are required:
   * `pyPadRestart.py`  restarts the python kernel or cleans the variables
   * `codeSnippetsLog.py`  optional: to store code snippets
 * Press OK, restart Notepad++ and go to menu "Settings / Shortcut mapper" and define in the tab "Plugin commands" the shortcuts (unset existing shortcuts in case of conflict):
-  * `pyPadExecute.py     <Ctrl> + <Enter>`
-  * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
+  * `pyPadExecute.py     <Shift> + <Enter>`
+  * `pyPadExecuteFix.py  <Ctrl> + <Enter>`
   * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
   * `pyPadRestart.py     <Alt> + <R>`
   * `codeSnippetsLog.py  <Alt> + <S>`
+* When Notepad++ does not allow you to define a shortcut on `<Shift> + <Enter>`, use `<Shift> + <Ctrl> + <Enter>` as preliminary shortcut. Then go to "Settings / Shortcut mapper / Scintilla commands" and unset `<Shift> + <Enter>` for `SCI_NEWLINE`. Now open `shortcuts.xml` in the Notepad++ Folder (when installed from zip file) or in the C:\Users\<user name>\AppData\Roaming\Notepad++\ folder for when Notepad++ was installed with the installer. Change the line
+  * `<PluginCommand moduleName="PythonScript.dll" internalID="8" Ctrl="yes" Alt="no" Shift="yes" Key="13" />`
+  * into `<PluginCommand moduleName="PythonScript.dll" internalID="8" Ctrl="no" Alt="no" Shift="yes" Key="13" />`
 * If you want to use the Python installation of you system, open the file 
   `notepad++\plugins\PythonScript\scripts\` and set the variable `pythonPath` to the path of `pythonw.exe`.
