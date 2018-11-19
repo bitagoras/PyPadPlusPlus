@@ -75,7 +75,7 @@ class pyPad:
         self.bufferMarkerAction = {}
         self.lastActiveBufferID = -1
 
-		# Marker
+        # Marker
         self.markerWidth = 3
         editor.setMarginWidthN(3, self.markerWidth)
         editor.setMarginMaskN(3, (256+128+64) * (1 + 2**3 + 2**6))
@@ -212,8 +212,8 @@ class pyPad:
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked block.'''
         if not self.bufferBusy:
-			self.thread = threading.Thread(target=self.runThread, args=(moveCursor, nonSelectedLine))
-			self.thread.start()
+            self.thread = threading.Thread(target=self.runThread, args=(moveCursor, nonSelectedLine))
+            self.thread.start()
 
     def runThread(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
@@ -260,7 +260,7 @@ class pyPad:
         if blockMode:
             iMatch = []
             editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+4, iDocEnd-1, 1)
-            iEnd = iMatch[0]-1 if len(iMatch) else iDocEnd
+            iEnd = iMatch[0] if len(iMatch) else iDocEnd
             iLineEnd = editor.lineFromPosition(iEnd)
             block = editor.getTextRange(iStart, iEnd).rstrip()
             err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
@@ -319,26 +319,26 @@ class pyPad:
                     self.matplotlib_EventHandler = False
 
             if isValue:
-				res = self.interp.evaluate()
-				if res is not None:
-					err, result = res
-					if not err:
-						if self.bufferBusy:
-							self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
-						if result: self.stdout(result+'\n')
-					else:
-						self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-						self.outBuffer(result)
+                res = self.interp.evaluate()
+                if res is not None:
+                    err, result = res
+                    if not err:
+                        if self.bufferBusy:
+                            self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
+                        if result: self.stdout(result+'\n')
+                    else:
+                        self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
+                        self.outBuffer(result)
 
             else:
-				res = self.interp.execute()
-				if res is not None:
-					err, result = res
-					if not err and self.bufferBusy:
-						self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
-					else:
-						self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
-					self.outBuffer(result)
+                res = self.interp.execute()
+                if res is not None:
+                    err, result = res
+                    if not err and self.bufferBusy:
+                        self.changeMarkers(iMarker=self.m_finish, bufferID=bufferID)
+                    else:
+                        self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
+                    self.outBuffer(result)
 
         if err:
             self.changeMarkers(iMarker=self.m_error, bufferID=bufferID)
