@@ -127,9 +127,6 @@ class pyPad:
             editor.callbackSync(self.lexer.on_updateui, [Npp.SCINTILLANOTIFICATION.UPDATEUI])
             notepad.callback(self.lexer.on_langchanged, [Npp.NOTIFICATION.LANGCHANGED])
         
-    def onClose(self, args):
-        self.__del__()
-
     def __del__(self):
         '''Clear call backs on exit.'''
         try: self.interp.proc.terminate()
@@ -210,14 +207,14 @@ class pyPad:
 
     def runCodeAtCursor(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
-        the current selection. Or execute one marked block.'''
+        the current selection. Or execute one marked cell.'''
         if not self.bufferBusy:
             self.thread = threading.Thread(target=self.runThread, args=(moveCursor, nonSelectedLine))
             self.thread.start()
 
     def runThread(self, moveCursor=True, nonSelectedLine=None):
         '''Executes the smallest possible code element for
-        the current selection. Or execute one marked block.'''
+        the current selection. Or execute one marked cell.'''
 
         bufferID = notepad.getCurrentBufferID()
         self.bufferBusy = bufferID
@@ -239,9 +236,9 @@ class pyPad:
             iLineStart = iLineEnd = iSelStart = iSelEnd = nonSelectedLine
         selection = iSelStart != iSelEnd
         startLine = editor.getLine(iLineStart).rstrip()
-        blockMode = not selection and (startLine.startswith('#%%') or startLine.startswith('# %%'))
+        cellMode = not selection and (startLine.startswith('#%%') or startLine.startswith('# %%'))
         err = None
-        if not blockMode:
+        if not cellMode:
             getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
             iFirstCodeLine, iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
             if not expectMoreLinesBefore and iFirstCodeLine:
@@ -257,7 +254,7 @@ class pyPad:
         iStart = editor.positionFromLine(iLineStart)
         iDocEnd = editor.getLength()
 
-        if blockMode:
+        if cellMode:
             iMatch = []
             editor.research('^# ?%%(.*)$', lambda m: iMatch.append(m.span(0)[0]-1), 0, iStart+4, iDocEnd-1, 1)
             iEnd = iMatch[0] if len(iMatch) else iDocEnd

@@ -27,9 +27,9 @@ print "* First line"
 print "* Second line"
 
 
-#%% Blocks of code can be started from special comments "#%%"
+#%% Cells of code can be started from special comments "#%%"
 
-# The end of the block is defined by the next comment with "#%%"
+# The end of the cell is defined by the next comment with "#%%"
 # or the end of file.
 
 multiline = """Multi line commands without
