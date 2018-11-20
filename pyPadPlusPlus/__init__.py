@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "0.8"
+__version__ = "1.0"
 
 import Npp
 from Npp import editor, console, notepad
@@ -111,6 +111,7 @@ class pyPad:
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.DWELLSTART])
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.MODIFIED])
         notepad.clearCallbacks([Npp.NOTIFICATION.BUFFERACTIVATED])
+        notepad.clearCallbacks([Npp.NOTIFICATION.SHUTDOWN])
         if self.lexer:
             notepad.clearCallbacks([Npp.SCINTILLANOTIFICATION.UPDATEUI])
             notepad.clearCallbacks([Npp.NOTIFICATION.LANGCHANGED])
@@ -123,6 +124,8 @@ class pyPad:
         editor.callback(self.onMouseDwell, [Npp.SCINTILLANOTIFICATION.DWELLSTART])
         editor.callback(self.textModified, [Npp.SCINTILLANOTIFICATION.MODIFIED])
         notepad.callback(self.onBufferActivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
+        notepad.callback(self.onShutdown, [Npp.NOTIFICATION.SHUTDOWN])
+        
         if self.lexer:
             editor.callbackSync(self.lexer.on_updateui, [Npp.SCINTILLANOTIFICATION.UPDATEUI])
             notepad.callback(self.lexer.on_langchanged, [Npp.NOTIFICATION.LANGCHANGED])
@@ -132,6 +135,10 @@ class pyPad:
         try: self.interp.proc.terminate()
         except: pass
         self.clearCallbacks()
+
+    def onShutdown(self, args):
+        try: self.interp.proc.terminate()
+        except: pass
 
     def restartKernel(self):
         if self.externalPython:

@@ -2,16 +2,21 @@
 # PyPadPlusPlus: Startup script
 #
 
-# Set the path to pythonw.exe, e.g. "C:\\programs\\Anaconda2\\pythonw.exe".
-# If pythonPath is None, the internal python of Notepad++ PythonScript
-# is used. Some features are only available for the external python kernel.
-# Python 3 is not supported, only Python 2.
+# Set the path to the folder that contains pythonw.exe, e.g.
+# "C:\\programs\\Anaconda2". If pythonPath is None, the internal Python
+# distribution of Notepad++ PythonScript is used. Some features are only
+# available for the external Python kernel. Python 3 is currently not
+# supported, only Python 2.
 
-pythonPath = "C:\\prog\\Anaconda2\\pythonw.exe"
+pythonPath = None
 
 # To use multiple interactive matplotlib windows, pyPadPlusPlus
 # runs an internal matplotlib event handler during idle time.
-# In case this causes problems, set to False
+# If this cases any problems, set it to False.
+# The matplotlib event handler is activated when matplotlib
+# is imported. In case matplotlib is imported implicitly by
+# another module, you must add to a code line a comment that
+# contains the word "matplotlib".
 
 matplotlib_EventHandler = True
 

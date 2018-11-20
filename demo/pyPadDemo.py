@@ -2,10 +2,13 @@
 
 #%% Execution with Keyboard and Mouse
 
-# <Ctrl> + <Return> executes the smalles possible piece of code
+# <Shift> + <Return> executes the smalles possible piece of code
 # that includes the line at the cursor or next to the cursor.
 
 print "hello world"
+
+# With <Ctrl> + <Shift> + <Return> the cursor stays at its position
+# and the same line can be executed several times.
 
 # The value of a single expression line will be printed
 1+2
@@ -18,7 +21,7 @@ for i in 1,2,3:
     s = str(i) * 8
     print "loop", s
 
-# Multiple lines can be executed by selection and <Ctrl> + <Return>.
+# Multiple lines can be executed by selection and <Shift> + <Return>.
 # The selection doesn't have to cover the whole line.
 # With the middle mouse button (mouse wheel button) a single or
 # multi line command or a selection can be executed.
@@ -60,7 +63,7 @@ def test(x):
     print 'The result is:'
     print x / 0
     print "Now you"
-    print 'removed the '
+    print 'removed the'
     print 'runtime error'
 
 test(5)  # runtime error
@@ -150,7 +153,4 @@ for i in range(n):
     y = (1 - 0.9*t/n) * (numpy.sin(3.008*2*numpy.pi*t) + numpy.sin(1.5*numpy.pi*(t+r1)))
     plt.plot(x, y, color=plt.cm.plasma(float(i)/n), alpha=0.9, lw=0.8)
 plt.show()
-
-
-
 

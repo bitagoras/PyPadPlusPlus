@@ -19,6 +19,12 @@ def toPipe(symbol):
    
 class interpreter:
     def __init__(self, pythonPath='pythonw', outBuffer=None):
+        if not pythonPath.endswith('.exe'):
+            if pythonPath.strip().endswith('pythonw'):
+                pythonPath = pythonPath.strip() + '.exe'
+            else:
+                pythonPath = os.path.join(pythonPath.strip(),'pythonw.exe')
+        assert os.path.exists(pythonPath), 'file pythonw.exe not found.'
         self.outBuffer = outBuffer
         clientPath = os.path.join(os.path.dirname(__file__), 'pyPadClient.py')
         self.StartCommand = pythonPath + ' -u ' + '"' + clientPath + '"'
