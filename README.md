@@ -25,12 +25,14 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 * Reset and restart Python kernel (e.g. when stuck in endless loop)
 * Matplotlib event handler to hold multiple active plot windows
 
-#### Installation
+#### Download
 
 PyPadPlusPlus has to be installed as a plugin to the Notepad++-plugin PythonScript. Since this is quite cumbersome you can download it ready-to-play in a bundle with Notepad++ v7.6 and PythonScript 1.3.0.0 as portable version:
 * Download [`Npp7.6_PyPadPlusPlus1.0.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.0/Npp7.6_PyPadPlusPlus1.0.zip), unzip it to a folder in your program directory and start `notepad++.exe`.
 
-If you need to install it in another version of Notepad++ you have to go the hard way:
+#### Installation
+
+If you need to install PyPadPlusPlus in another version of Notepad++ you have to go the hard way:
 
 1. Install Python Script from https://github.com/bruderstein/PythonScript/releases/.
 2. Download the sources or the latest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) of PyPadPlusPlus and extract the files into the script folder of PythonScript:
