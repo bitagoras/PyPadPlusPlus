@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "1.0"
+__version__ = "1.0.1"
 
 import Npp
 from Npp import editor, console, notepad
@@ -49,6 +49,7 @@ class pyPad:
         editor.grabFocus()
         self.windowHandle = win32gui.GetForegroundWindow()
         self.matplotlib_EventHandler = matplotlib_EventHandler
+        self.matplotlib_Enabled = False
 
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
@@ -152,6 +153,7 @@ class pyPad:
         self.hideMarkers()
         self.lastActiveBufferID = -1
         self.setCallbacks()
+        self.matplotlib_Enabled = False
 
     def onBufferActivated(self, args):
         bufferID = args["bufferID"]
@@ -317,10 +319,10 @@ class pyPad:
                     editor.newLine()
                 editor.scrollCaret()
 
-            if self.matplotlib_EventHandler:
+            if self.matplotlib_EventHandler and not self.matplotlib_Enabled:
                 if 'matplotlib' in block:
                     self.interp.execute(init_matplotlib_EventHandler)
-                    self.matplotlib_EventHandler = False
+                    self.matplotlib_Enabled = False
 
             if isValue:
                 res = self.interp.evaluate()
