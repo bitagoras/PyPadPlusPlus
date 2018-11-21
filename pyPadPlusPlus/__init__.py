@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 import Npp
 from Npp import editor, console, notepad
@@ -33,9 +33,6 @@ def GetWindowRect(hwnd):
     windll.user32.GetWindowRect(hwnd, byref(rect))
     return rect
 
-# Set pythonPath to None for internal Python from Python Script Plugin of Notepad++
-# For external python environment specify path to file pythonw.exe.
-
 init_matplotlib_EventHandler = """try:
     import matplotlib
     from matplotlib import _pylab_helpers
@@ -43,7 +40,7 @@ init_matplotlib_EventHandler = """try:
     import matplotlib.pyplot
     pyplotShow = matplotlib.pyplot.show
     def show(*args, **kw):
-        if not 'block' in kw:
+        if not args and not 'block' in kw:
             kw['block'] = False
         pyplotShow(*args, **kw)
     matplotlib.pyplot.show = show  # monkeypatch plt.show to default to non-blocking mode
@@ -55,6 +52,7 @@ class PseudoFileOut:
     def __init__(self, write):
         self.write = write
     def write(self, s): pass
+    
 class pyPad:
     def __init__(self, externalPython=None, matplotlib_EventHandler=True):
         '''Initializes PyPadPlusPlus to prepare Notepad++
@@ -140,7 +138,6 @@ class pyPad:
         editor.callback(self.textModified, [Npp.SCINTILLANOTIFICATION.MODIFIED])
         notepad.callback(self.onBufferActivated, [Npp.NOTIFICATION.BUFFERACTIVATED])
         notepad.callback(self.onShutdown, [Npp.NOTIFICATION.SHUTDOWN])
-        
         if self.lexer:
             editor.callbackSync(self.lexer.on_updateui, [Npp.SCINTILLANOTIFICATION.UPDATEUI])
             notepad.callback(self.lexer.on_langchanged, [Npp.NOTIFICATION.LANGCHANGED])
@@ -319,7 +316,7 @@ class pyPad:
         else:
 
             # Check if correct path is set
-            if self.lastActiveBufferID != bufferID and '.' in os.path.basename(filename):
+            if self.externalPython and self.lastActiveBufferID != bufferID and '.' in os.path.basename(filename):
                 filePath = os.path.normpath(os.path.split(filename)[0])
                 self.interp.execute('os.chdir('+repr(filePath)+')')
                 self.lastActiveBufferID = bufferID
