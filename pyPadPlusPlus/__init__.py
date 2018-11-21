@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 import Npp
 from Npp import editor, console, notepad
@@ -16,8 +16,22 @@ import threading
 import textwrap
 import pyPadHost
 import pyPadClient
-import win32api, win32con, win32gui
 from math import sin, pi
+
+from ctypes import windll, Structure, c_ulong, byref
+GetForegroundWindow = windll.user32.GetForegroundWindow
+GetParent = windll.user32.GetParent
+WindowFromPoint = windll.user32.WindowFromPoint
+GetKeyState = windll.user32.GetKeyState
+VK_MBUTTON = 4
+def GetCursorPos():
+    point = (c_ulong*2)()
+    windll.user32.GetCursorPos(byref(point))
+    return point
+def GetWindowRect(hwnd):
+    rect = (c_ulong*4)()
+    windll.user32.GetWindowRect(hwnd, byref(rect))
+    return rect
 
 # Set pythonPath to None for internal Python from Python Script Plugin of Notepad++
 # For external python environment specify path to file pythonw.exe.
@@ -47,7 +61,7 @@ class pyPad:
         for interactive Python development'''
         console.show()
         editor.grabFocus()
-        self.windowHandle = win32gui.GetForegroundWindow()
+        self.windowHandle = GetForegroundWindow()
         self.matplotlib_EventHandler = matplotlib_EventHandler
         self.matplotlib_Enabled = False
 
@@ -165,12 +179,12 @@ class pyPad:
 
     def onTimer(self):
         self.timerCount += 1
-        middleButton = win32api.GetKeyState(win32con.VK_MBUTTON)
+        middleButton = GetKeyState(VK_MBUTTON)
         if middleButton < 0 and self.middleButton >= 0:
-            x,y = win32api.GetCursorPos()
-            hwnd = win32gui.WindowFromPoint((x,y))
-            x0,y0,x1,y1 = win32gui.GetWindowRect(hwnd)
-            if x0 <= x <= x1 and y0 <= y <= y1 and win32gui.GetParent(hwnd) == win32gui.GetForegroundWindow() == self.windowHandle:
+            x,y = GetCursorPos()
+            hwnd = WindowFromPoint(x,y)
+            x0,y0,x1,y1 = GetWindowRect(hwnd)
+            if x0 <= x <= x1 and y0 <= y <= y1 and GetParent(hwnd) == GetForegroundWindow() == self.windowHandle:
                 pos = editor.positionFromPoint(x-x0, y-y0)
                 iLineClick = editor.lineFromPosition(pos)
                 iLineStart = editor.lineFromPosition(editor.getSelectionStart())
