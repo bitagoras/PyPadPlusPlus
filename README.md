@@ -22,7 +22,7 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 * Color marker to highlight last executed lines
 * Animated color marker for active lines
 * Internal or external Python distribution
-* Reset and restart Python kernel (e.g. when stuck in endless loop)
+* Reset and restart Python kernel (e.g. when stuck in endless loop, not available when using the internal Python)
 * Matplotlib event handler to hold multiple active plot windows
 
 #### Download
