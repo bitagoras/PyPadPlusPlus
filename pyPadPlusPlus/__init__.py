@@ -192,14 +192,13 @@ class pyPad:
                     self.runCodeAtCursor(moveCursor=False, nonSelectedLine=iLineClick)
         self.middleButton = middleButton
         if self.timerCount > self.timerCountFlush:
-            if not self.bufferBusy:
-                if not self.interp.kernelBusy.isSet():
-                    try:
-                        err, result = self.interp.flush()
-                        if result:
-                            self.outBuffer(result)
-                    except:
-                        pass
+            if not self.interp.kernelBusy.isSet():
+                try:
+                    err, result = self.interp.flush()
+                    if result:
+                        self.outBuffer(result)
+                except:
+                    pass
             self.timerCount = 0
         threading.Timer(self.tTimer, self.onTimer).start()
 
