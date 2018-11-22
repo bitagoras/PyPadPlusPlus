@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 import Npp
 from Npp import editor, console, notepad
@@ -316,7 +316,7 @@ class pyPad:
         else:
 
             # Check if correct path is set
-            if self.externalPython and self.lastActiveBufferID != bufferID and '.' in os.path.basename(filename):
+            if self.lastActiveBufferID != bufferID and '.' in os.path.basename(filename):
                 filePath = os.path.normpath(os.path.split(filename)[0])
                 self.interp.execute('os.chdir('+repr(filePath)+')')
                 self.lastActiveBufferID = bufferID
@@ -606,7 +606,6 @@ class pyPad:
             iLineStart = editor.positionFromLine(editor.lineFromPosition(iStart))
             var = editor.getTextRange(iStart, iEnd)
             line = editor.getTextRange(iLineStart, iEnd)
-            #try:
             if var == '.':
                 autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iStart+1))
                 if autoCompleteList:
@@ -630,9 +629,6 @@ class pyPad:
                         self.activeCalltip = 'doc'
                         editor.callTipShow(iStart, ''.join(calltip))
                         editor.callTipSetHlt(0, int(nHighlight))
-            # except Exception as e:
-                # raise e
-                # pass
 
     def onAutocomplete(self, args):
         '''Check if auto complete data can be added and displayed:

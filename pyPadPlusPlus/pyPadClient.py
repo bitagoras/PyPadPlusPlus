@@ -71,6 +71,7 @@ class interpreter:
         self.userLocals = {}
         self.interp = code.InteractiveInterpreter(self.userLocals)
         self.kernelBusy = threading.Event()
+        os.chdir(os.path.expanduser("~"))
         
     def restartKernel(self):
         self.userLocals = {}
@@ -321,6 +322,5 @@ def startLocalClient():
 #
 if __name__ == '__main__':
     active_matplotlib_EventHandler = False   
-    os.chdir(os.path.expanduser("~"))
     startLocalClient()
     exit()
