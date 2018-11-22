@@ -27,11 +27,11 @@ VK_MBUTTON = 4
 def GetCursorPos():
     point = (c_ulong*2)()
     windll.user32.GetCursorPos(byref(point))
-    return point
+    return [int(i) for i in point]
 def GetWindowRect(hwnd):
     rect = (c_ulong*4)()
     windll.user32.GetWindowRect(hwnd, byref(rect))
-    return rect
+    return [int(i) for i in rect]
 
 init_matplotlib_EventHandler = """try:
     import matplotlib
@@ -177,8 +177,8 @@ class pyPad:
 
     def onTimer(self):
         self.timerCount += 1
-        middleButton = GetKeyState(VK_MBUTTON)
-        if middleButton < 0 and self.middleButton >= 0:
+        middleButton = GetKeyState(VK_MBUTTON) & (-127 + 32768) > 1
+        if middleButton:
             x,y = GetCursorPos()
             hwnd = WindowFromPoint(x,y)
             x0,y0,x1,y1 = GetWindowRect(hwnd)
