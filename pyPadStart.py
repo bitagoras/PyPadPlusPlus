@@ -20,8 +20,15 @@ pythonPath = None
 
 matplotlib_EventHandler = True
 
+# Cell highlighter underlines comments starting with #%% to highlight
+# code cells. This can slowdown Notpad++ during heavy computational load.
+
+cellHighlight = True
+
 
 # Start pyPadPlusPlus
 import Npp, pyPadPlusPlus
-Npp.pypad = pyPadPlusPlus.pyPad(externalPython=pythonPath,
-        matplotlib_EventHandler=matplotlib_EventHandler)
+Npp.pypad = pyPadPlusPlus.pyPad(
+        externalPython=pythonPath,
+        matplotlib_EventHandler=matplotlib_EventHandler,
+        cellHighlight=cellHighlight)

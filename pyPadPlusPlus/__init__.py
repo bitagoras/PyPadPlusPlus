@@ -54,7 +54,7 @@ class PseudoFileOut:
     def write(self, s): pass
     
 class pyPad:
-    def __init__(self, externalPython=None, matplotlib_EventHandler=True):
+    def __init__(self, externalPython=None, matplotlib_EventHandler=True, cellHighlight=True):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
@@ -69,14 +69,15 @@ class pyPad:
 
         self.externalPython = bool(externalPython)
         if self.externalPython:
-            # start syntax highligter
-            self.lexer = EnhancedPythonLexer()
-            self.lexer.main()
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
         else:
-            # syntax highligter could slow down notepad++ in this mode
-            self.lexer = None
             self.interp = pyPadClient.interpreter()
+        
+        if cellHighlight:
+            self.lexer = EnhancedPythonLexer()
+            self.lexer.main()
+        else:
+            self.lexer = None
 
         self.thread = None
         self.threadMarker = None
