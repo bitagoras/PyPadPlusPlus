@@ -28,7 +28,7 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 #### Download
 
 PyPadPlusPlus has to be installed as a plugin to the Notepad++-plugin PythonScript. Since this is quite cumbersome you can download it ready-to-play in a bundle with Notepad++ v7.6 and PythonScript v1.3.0.0 as portable version:
-* Download [`Npp7.6_PyPadPlusPlus1.0.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.0/Npp7.6_PyPadPlusPlus1.0.zip), unzip it into a folder and start `notepad++.exe`.
+* Download [`Npp7.6_32bit_PyPadPlusPlus1.0.4.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.0.4/Npp7.6_32bit_PyPadPlusPlus1.0.4.zip) or [`Npp7.6_64bit_PyPadPlusPlus1.0.4.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.0.4/Npp7.6_64bit_PyPadPlusPlus1.0.4.zip), unzip it into a folder and start `notepad++.exe`.
 
 #### Installation
 
@@ -51,7 +51,7 @@ If you need to install PyPadPlusPlus in another version of Notepad++ you have to
     * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
     * `pyPadRestart.py     <Alt> + <R>`
     * `codeSnippetsLog.py  <Alt> + <S>`
-7. When Notepad++ does not allow you to define a shortcut on `<Shift> + <Enter>`, use `<Shift> + <Alt> + <Enter>` as preliminary shortcut. Then go to "Settings / Shortcut mapper / Scintilla commands" and unset `<Shift> + <Enter>` for `SCI_NEWLINE`. Now open `shortcuts.xml` in the Notepad++ Folder. Check if there is a line `<ScintKey ScintID="2329" menuCmdID="0" Ctrl="no" Alt="no" Shift="no" Key="13" />`. If not try to find it in the `C:\Users\<user name>\AppData\Local\Roaming\Notepad++\` folder when Notepad++ was installed with the installer. Now search the line
+7. When Notepad++ does not allow you to define a shortcut on `<Shift> + <Enter>`, use `<Shift> + <Alt> + <Enter>` as preliminary shortcut. Then go to "Settings / Shortcut mapper / Scintilla commands" and unset `<Shift> + <Enter>` for `SCI_NEWLINE`. Now open `shortcuts.xml` in the Notepad++ Folder. Check if there is a line `<ScintKey ScintID="2329" menuCmdID="0" Ctrl="no" Alt="no" Shift="no" Key="13" />`. If not try to find it in the `C:\Users\<user name>\AppData[\Local]\Roaming\Notepad++\` folder when Notepad++ was installed with the installer. Now search the line
     * `<PluginCommand moduleName="PythonScript.dll" internalID="8" Ctrl="no" Alt="yes" Shift="yes" Key="13" />`
     * The `internalID` can differ from yours. Then change the `Alt="yes"` into `Alt="no"`. 
 8. If you want to use the Python installation of you system, open the file 
