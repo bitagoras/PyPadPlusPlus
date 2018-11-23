@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 import Npp
 from Npp import editor, console, notepad
@@ -177,8 +177,8 @@ class pyPad:
 
     def onTimer(self):
         self.timerCount += 1
-        middleButton = GetKeyState(VK_MBUTTON) & (-127 + 32768) > 1
-        if middleButton:
+        middleButton = GetKeyState(VK_MBUTTON)
+        if self.middleButton != middleButton and (middleButton - (middleButton & 1)) != 0:
             x,y = GetCursorPos()
             hwnd = WindowFromPoint(x,y)
             x0,y0,x1,y1 = GetWindowRect(hwnd)
