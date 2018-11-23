@@ -183,7 +183,10 @@ class interpreter:
                 else:
                     value = textFull
                     if truncate: value = self.maxCallTip(textFull)
-                    calltip = 'type: ', typ, '\nstr: ', ('\n' if '\n' in value else '') + value
+                    if hasattr(object, '__len__'):
+                        calltip = 'type: ', typ + ', len: %i'%len(object), '\nstr: ', ('\n' if '\n' in value else '') + value
+                    else:
+                        calltip = 'type: ', typ, '\nstr: ', ('\n' if '\n' in value else '') + value
             self.fullCallTip = var, calltip[:-1] + (textFull,)
         nHighlight = 0
         for ct in calltip[:3]:
