@@ -33,7 +33,7 @@ def GetWindowRect(hwnd):
     windll.user32.GetWindowRect(hwnd, byref(rect))
     return [int(i) for i in rect]
 
-init_matplotlib_EventHandler = """try:
+init_matplotlib_eventHandler = """try:
     import matplotlib
     from matplotlib import _pylab_helpers
     from matplotlib.rcsetup import interactive_bk as _interactive_bk
@@ -44,7 +44,7 @@ init_matplotlib_EventHandler = """try:
             kw['block'] = False
         pyplotShow(*args, **kw)
     matplotlib.pyplot.show = show  # monkeypatch plt.show to default to non-blocking mode
-    active_matplotlib_EventHandler = True
+    active_matplotlib_eventHandler = True
 except: pass
 """
 
@@ -54,14 +54,14 @@ class PseudoFileOut:
     def write(self, s): pass
     
 class pyPad:
-    def __init__(self, externalPython=None, matplotlib_EventHandler=True, cellHighlight=True):
+    def __init__(self, externalPython=None, matplotlib_eventHandler=True, cellHighlight=True):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
         editor.grabFocus()
         self.windowHandle = GetForegroundWindow()
-        self.matplotlib_EventHandler = matplotlib_EventHandler
-        self.matplotlib_Enabled = False
+        self.matplotlib_eventHandler = matplotlib_eventHandler
+        self.matplotlib_enabled = False
 
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
@@ -165,7 +165,7 @@ class pyPad:
         self.hideMarkers()
         self.lastActiveBufferID = -1
         self.setCallbacks()
-        self.matplotlib_Enabled = False
+        self.matplotlib_enabled = False
 
     def onBufferActivated(self, args):
         bufferID = args["bufferID"]
@@ -191,7 +191,7 @@ class pyPad:
                     self.runCodeAtCursor(moveCursor=False)
                 elif 0 <= pos < editor.getLength():
                     self.runCodeAtCursor(moveCursor=False, nonSelectedLine=iLineClick)
-        self.middleButton = middleButton
+            self.middleButton = middleButton
         if self.timerCount > self.timerCountFlush:
             if not self.interp.kernelBusy.isSet():
                 try:
@@ -330,10 +330,10 @@ class pyPad:
                     editor.newLine()
                 editor.scrollCaret()
 
-            if self.matplotlib_EventHandler and not self.matplotlib_Enabled:
+            if self.matplotlib_eventHandler and not self.matplotlib_enabled:
                 if 'matplotlib' in block:
-                    self.interp.execute(init_matplotlib_EventHandler)
-                    self.matplotlib_Enabled = False
+                    self.interp.execute(init_matplotlib_eventHandler)
+                    self.matplotlib_enabled = True
 
             if isValue:
                 res = self.interp.evaluate()

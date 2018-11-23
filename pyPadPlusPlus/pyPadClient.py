@@ -292,7 +292,7 @@ def startLocalClient():
     thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
     thread.start()
         
-    def matplotlib_EventHandler(interval):
+    def matplotlib_eventHandler(interval):
         backend = matplotlib.rcParams['backend']
         if backend in _interactive_bk:
             figManager = _pylab_helpers.Gcf.get_active()
@@ -304,8 +304,8 @@ def startLocalClient():
         time.sleep(interval) # In case no on-screen figure is active
 
     def wait():
-        if active_matplotlib_EventHandler:
-            matplotlib_EventHandler(0.05)
+        if active_matplotlib_eventHandler:
+            matplotlib_eventHandler(0.05)
         else:
             time.sleep(0.05)
 
@@ -321,6 +321,6 @@ def startLocalClient():
 # Main function for the pyPadClient to run inside the python subprocess.
 #
 if __name__ == '__main__':
-    active_matplotlib_EventHandler = False   
+    active_matplotlib_eventHandler = False   
     startLocalClient()
     exit()
