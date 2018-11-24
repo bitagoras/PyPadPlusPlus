@@ -2,7 +2,7 @@
 
 #%% Execution with Keyboard and Mouse
 
-# <Shift> + <Return> executes the smalles possible piece of code
+# <Shift> + <Return> executes the smallest possible piece of code
 # that includes the line at the cursor or next to the cursor.
 
 print "hello world"
@@ -13,7 +13,7 @@ print "hello world"
 # The value of a single expression line will be printed
 1+2
 
-# Muliline commands are executed as a whole and can be started
+# Multi line commands are executed as a whole and can be started
 # from any line inside the indented block. A yellow line shows
 # which lines have been executed.
 
@@ -42,15 +42,16 @@ first line or above"""
 
 #%% Marker lines
 
-# An animated dark line indicates that python is busy.
+# An animated dark line indicates that Python is busy.
 import time
 for i in 1,2,3,4,5:
     print "wait for", i, '*'*i
     time.sleep(1)
     # you can interrupt and restart the kernel with <Alt> + <R>
+    # when you use an external python installation of your system
 
 # A red line indicates an syntax or runtime error.
-# The python traceback error message is clickable.
+# The Python traceback error message is clickable.
 
 # find the syntax error
 a = [(1,13), (4,12),
@@ -59,27 +60,29 @@ a = [(1,13), (4,12),
      (1,12), (5,14)]
      
 def test(x):
-    print 'We now divide', x, 'by zero.'
+    print 'We divide', x, 'by another number.'
     print 'The result is:'
     print x / 0
-    print "Now you"
-    print 'removed the'
-    print 'runtime error'
+    print 'No runtime'
+    print 'error is present'
+    print 'any more.'
 
-test(5)  # runtime error
+# demonstrates a runtime error
+test(5)
 
 
-#%% Code completion and call tips
+#%% Code completion and popups
 
 # A code completion list is shown for any objects.
-class car:
-    nWheels = 4
-    speed = 100
-    color = "red"
+class planet:
+    name = 'Proxima b'
+    EarthSimularityIndex = 0.85
+    distance = 4.2
+    habitable = True
 # add a point "." after the variable to display the list
-car
+planet
 
-# Code completion is also available for dictionarys.
+# Code completion is also available for dictionaries.
 # This also works for h5py file objects.
 bike = {
     'nWheels': 2,
@@ -96,7 +99,7 @@ def twice(x, factor=2):
 # add a parenthesis "(" after the function to display the doc string
 twice
 
-#%% Tool tips
+#%% Autoinspection popups
 
 var1 = {'two': 2}
 var2 = [1,2,3]
@@ -104,12 +107,12 @@ var3 = (1,2,3)
 var4 = "test"
 
 # Select each variable (double click) and hover with the mouse.
-# The type and string representation will be shown in a tooltip
-# When clicking at the tooltip the full content is printed in
+# The type and string representation will be shown in a popup
+# When clicking at the popup the full content is printed in
 # the console. Use <Ctrl> + <Z> in the console to remove it again.
-var1, var2, var3, var4, test, time
+var1, var2, var3, var4, twice, time
 
-# Select the "True" and click at the tooltip to change to "False"
+# Select the "True" and click at the popup to change to "False"
 swich = True
 
 
@@ -122,14 +125,14 @@ swich = True
 
 # The console has an undo buffer. Print some lines, click in the console
 # and press undo (<Ctrl> + <Z>) to unto the print.
-print '1.', multiline
-print '2.', multiline
-print '3.', multiline
+print '1.' + ((' First long multi line output.'*3)+'\n')*3
+print '2.' + ((' Second long multi line output.'*3)+'\n')*3
+print '3.' + ((' Third long multi line output.'*3)+'\n')*3
 
 
 #%% Matplotlib
 
-# When an external python kernel is used that has matplotlib installed,
+# When an external Python kernel is used that has matplotlib installed,
 # multiple interactive plots can be plotted at the same time
 
 import matplotlib.pyplot as plt

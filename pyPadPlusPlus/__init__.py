@@ -4,7 +4,7 @@
 __author__ = "Christian Schirm"
 __copyright__ = "Copyright 2018"
 __license__ = "GPLv3"
-__version__ = "1.0.5"
+__version__ = "1.1.0"
 
 import Npp
 from Npp import editor, console, notepad
@@ -19,11 +19,6 @@ import pyPadClient
 from math import sin, pi
 
 from ctypes import windll, Structure, c_ulong, byref
-GetForegroundWindow = windll.user32.GetForegroundWindow
-GetParent = windll.user32.GetParent
-WindowFromPoint = windll.user32.WindowFromPoint
-GetKeyState = windll.user32.GetKeyState
-VK_MBUTTON = 4
 def GetCursorPos():
     point = (c_ulong*2)()
     windll.user32.GetCursorPos(byref(point))
@@ -32,6 +27,7 @@ def GetWindowRect(hwnd):
     rect = (c_ulong*4)()
     windll.user32.GetWindowRect(hwnd, byref(rect))
     return [int(i) for i in rect]
+VK_MBUTTON = 4
 
 init_matplotlib_eventHandler = """try:
     import matplotlib
@@ -52,27 +48,33 @@ class PseudoFileOut:
     def __init__(self, write):
         self.write = write
     def write(self, s): pass
-    
+
 class pyPad:
-    def __init__(self, externalPython=None, matplotlib_eventHandler=True, cellHighlight=True):
+    def __init__(self, externalPython=None, matplotlib_eventHandler=True, cellHighlight=True,
+            popupForUnselectedVariable=True, popupForSelectedExpression=False,
+            mouseDwellTime=200):
         '''Initializes PyPadPlusPlus to prepare Notepad++
         for interactive Python development'''
         console.show()
         editor.grabFocus()
-        self.windowHandle = GetForegroundWindow()
-        self.matplotlib_eventHandler = matplotlib_eventHandler
-        self.matplotlib_enabled = False
+        self.windowHandle = windll.user32.GetForegroundWindow()
 
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
         sys.stdout.outp=PseudoFileOut(Npp.console.write)
+        
+        self.matplotlib_eventHandler = matplotlib_eventHandler
+        self.matplotlib_enabled = False
+        self.popupForUnselectedVariable = popupForUnselectedVariable
+        self.popupForSelectedExpression = popupForSelectedExpression
+        self.mouseDwellTime = mouseDwellTime
 
         self.externalPython = bool(externalPython)
         if self.externalPython:
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
         else:
             self.interp = pyPadClient.interpreter()
-        
+
         if cellHighlight:
             self.lexer = EnhancedPythonLexer()
             self.lexer.main()
@@ -100,7 +102,7 @@ class pyPad:
             self.drawMarker(iMarker)
 
         self.setCallbacks()
-            
+
         editor.callTipSetBack((255,255,225))
         editor.autoCSetSeparator(ord('\t'))
         editor.autoCSetIgnoreCase(False)
@@ -111,13 +113,13 @@ class pyPad:
         console.clear()
         console.editor.setReadOnly(0)
 
-        self.tTimer = 0.05
-        self.timerCountFlush = int(0.25 / self.tTimer)
-        self.timerCount = 0
+        self.tTimerFlush = 0.25
+        self.tTimerMiddleButton = 0.1
         self.middleButton = 0
 
         self.bufferBusy = 0
-        self.onTimer()  # start periodic timer to check output of subprocess
+        self.onTimerFlush()  # start periodic timer to check output of subprocess
+        self.onTimerMiddleButton()  # start periodic timer to check state of middleButton
 
     def clearCallbacks(self):
         editor.clearCallbacks([Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
@@ -129,10 +131,10 @@ class pyPad:
         if self.lexer:
             notepad.clearCallbacks([Npp.SCINTILLANOTIFICATION.UPDATEUI])
             notepad.clearCallbacks([Npp.NOTIFICATION.LANGCHANGED])
-    
+
     def setCallbacks(self):
         self.clearCallbacks()
-        editor.setMouseDwellTime(300)
+        editor.setMouseDwellTime(self.mouseDwellTime)
         editor.callback(self.onCalltipClick, [Npp.SCINTILLANOTIFICATION.CALLTIPCLICK])
         editor.callback(self.onAutocomplete, [Npp.SCINTILLANOTIFICATION.CHARADDED])
         editor.callback(self.onMouseDwell, [Npp.SCINTILLANOTIFICATION.DWELLSTART])
@@ -142,7 +144,7 @@ class pyPad:
         if self.lexer:
             editor.callbackSync(self.lexer.on_updateui, [Npp.SCINTILLANOTIFICATION.UPDATEUI])
             notepad.callback(self.lexer.on_langchanged, [Npp.NOTIFICATION.LANGCHANGED])
-        
+
     def __del__(self):
         '''Clear call backs on exit.'''
         try: self.interp.proc.terminate()
@@ -175,33 +177,40 @@ class pyPad:
         if self.lexer:
             self.lexer.on_bufferactivated(args)
 
-    def onTimer(self):
-        self.timerCount += 1
-        middleButton = GetKeyState(VK_MBUTTON)
+    def onTimerMiddleButton(self):
+        middleButton = windll.user32.GetKeyState(VK_MBUTTON)
         if self.middleButton != middleButton and (middleButton - (middleButton & 1)) != 0:
             x,y = GetCursorPos()
-            hwnd = WindowFromPoint(x,y)
-            x0,y0,x1,y1 = GetWindowRect(hwnd)
-            if x0 <= x <= x1 and y0 <= y <= y1 and GetParent(hwnd) == GetForegroundWindow() == self.windowHandle:
+            hFore = windll.user32.GetForegroundWindow()
+            hPoint = windll.user32.WindowFromPoint(x,y)
+            if hPoint == hFore:
+                hPoint = windll.user32.ChildWindowFromPoint(hFore, x,y)
+            hSelf = self.windowHandle
+            x0,y0,x1,y1 = GetWindowRect(hPoint)
+            if x0 <= x <= x1 and y0 <= y <= y1 and hSelf == hFore:
+                editor.grabFocus()
                 pos = editor.positionFromPoint(x-x0, y-y0)
                 iLineClick = editor.lineFromPosition(pos)
-                iLineStart = editor.lineFromPosition(editor.getSelectionStart())
-                iLineEnd = editor.lineFromPosition(editor.getSelectionEnd())
-                if iLineStart <= iLineClick <= iLineEnd:
-                    self.runCodeAtCursor(moveCursor=False)
+                iStart = editor.getSelectionStart()
+                iEnd = editor.getSelectionEnd()
+                iLineStart = editor.lineFromPosition(iStart)
+                iLineEnd = editor.lineFromPosition(iEnd)
+                if iStart != iEnd and iLineStart <= iLineClick <= iLineEnd:
+                    self.runCodeAtCursor(moveCursor=False, onlyInsideCodeLines=True)
                 elif 0 <= pos < editor.getLength():
-                    self.runCodeAtCursor(moveCursor=False, nonSelectedLine=iLineClick)
-            self.middleButton = middleButton
-        if self.timerCount > self.timerCountFlush:
-            if not self.interp.kernelBusy.isSet():
-                try:
-                    err, result = self.interp.flush()
-                    if result:
-                        self.outBuffer(result)
-                except:
-                    pass
-            self.timerCount = 0
-        threading.Timer(self.tTimer, self.onTimer).start()
+                    self.runCodeAtCursor(moveCursor=False, nonSelectedLine=iLineClick, onlyInsideCodeLines=True)
+        self.middleButton = middleButton
+        threading.Timer(self.tTimerMiddleButton, self.onTimerMiddleButton).start()
+
+    def onTimerFlush(self):
+        if not self.interp.kernelBusy.isSet():
+            try:
+                err, result = self.interp.flush()
+                if result:
+                    self.outBuffer(result)
+            except:
+                pass
+        threading.Timer(self.tTimerFlush, self.onTimerFlush).start()
 
     def textModified(self, args):
         '''When the marked text is modified the execution markers
@@ -225,14 +234,14 @@ class pyPad:
                 if len(iLines) > 0 and min(iLines) <= iCurrentLine <= max(iLines):
                     self.setMarkers(min(iLines), max(iLines), iMarker=self.m_active, bufferID=bufferID, startAnimation=False)
 
-    def runCodeAtCursor(self, moveCursor=True, nonSelectedLine=None):
+    def runCodeAtCursor(self, moveCursor=True, nonSelectedLine=None, onlyInsideCodeLines=False):
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked cell.'''
         if not self.bufferBusy:
-            self.thread = threading.Thread(target=self.runThread, args=(moveCursor, nonSelectedLine))
+            self.thread = threading.Thread(target=self.runThread, args=(moveCursor, nonSelectedLine, onlyInsideCodeLines))
             self.thread.start()
 
-    def runThread(self, moveCursor=True, nonSelectedLine=None):
+    def runThread(self, moveCursor=True, nonSelectedLine=None, onlyInsideCodeLines=False):
         '''Executes the smallest possible code element for
         the current selection. Or execute one marked cell.'''
 
@@ -250,10 +259,11 @@ class pyPad:
             iSelStart = editor.getSelectionStart()
             iSelEnd = editor.getSelectionEnd()
             iPos = editor.getCurrentPos()
-            iLineStart = editor.lineFromPosition(iSelStart)
+            iLineCursor = iLineStart = editor.lineFromPosition(iSelStart)
             iLineEnd = max(iLineStart, editor.lineFromPosition(iSelEnd-1))
         else:
-            iLineStart = iLineEnd = iSelStart = iSelEnd = nonSelectedLine
+            iLineCursor = iLineStart = iLineEnd = nonSelectedLine
+            iSelStart = iSelEnd = 0
         selection = iSelStart != iSelEnd
         startLine = editor.getLine(iLineStart).rstrip()
         cellMode = not selection and (startLine.startswith('#%%') or startLine.startswith('# %%'))
@@ -304,6 +314,15 @@ class pyPad:
                     if iEnd == -1:
                         iLineEnd = iLineStart
                         break
+
+        if onlyInsideCodeLines and not selection and not iLineStart <= iLineCursor <= iLineEnd:
+            self.hideMarkers()
+            self.bufferBusy = 0
+            return
+
+        if self.activeCalltip:
+            editor.callTipCancel()
+            self.activeCalltip = None
 
         self.setMarkers(iLineStart, iLineEnd, block, iMarker=(self.m_active if not err else self.m_error), bufferID=bufferID)
 
@@ -375,10 +394,13 @@ class pyPad:
         the selected code, e.g. the beginning of an indented
         code block.'''
         iFirstCodeLine = iLine
+        satisfied = False
         while iLine >= 0:
             line = editor.getLine(iLine).rstrip()
             isCodeLine = len(line) > 0 and not line.lstrip().startswith('#')
             isDecorator = line.startswith('@')
+            if satisfied and not isDecorator:
+                break
             isIndent = isCodeLine and (line.startswith(' ') or line.startswith('\t'))
             requireMoreLine = isIndent or line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:')
@@ -390,7 +412,9 @@ class pyPad:
                 break
             if isCodeLine:
                 iFirstCodeLine = iLine
-                if not isIndent: expectMoreLines = False
+                if not isIndent:
+                    expectMoreLines = False
+                    satisfied = True
             iLine -= 1
         return max(0, iFirstCodeLine)
 
@@ -579,6 +603,85 @@ class pyPad:
         console.editor.endUndoAction()
         console.editor.setReadOnly(0)
 
+    def onMouseDwell(self, args):
+        '''Show a call tip window about the current content
+        of a selected variable'''
+        if self.bufferBusy or self.interp.kernelBusy.isSet(): return
+        if editor.callTipActive(): return
+        p = editor.positionFromPoint(args['x'], args['y'])
+        iStart = editor.getSelectionStart()
+        iEnd = editor.getSelectionEnd()
+        if iEnd != iStart and iStart <= p <= iEnd:
+            if self.popupForSelectedExpression and iEnd - iStart > 1:
+                expression = editor.getTextRange(iStart, iEnd)
+                if expression =='False':
+                    self.activeCalltip = False
+                    editor.callTipShow(iStart, 'set to True')
+                elif expression =='True':
+                    self.activeCalltip = True
+                    editor.callTipShow(iStart, 'set to False')
+                elif not '\n' in expression:
+                    ret = self.interp.getCallTip(None, expression)
+                    if ret:
+                        element, nHighlight, calltip = ret
+                        self.activeCalltip = 'doc'
+                        editor.callTipShow(iStart, ''.join(calltip))
+                        editor.callTipSetHlt(0, int(nHighlight))
+            else:
+                iLineStart = editor.positionFromLine(editor.lineFromPosition(iStart))
+                var = editor.getTextRange(iStart, iEnd)
+                line = editor.getTextRange(iLineStart, iEnd)
+                if var == '.':
+                    autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iStart+1))
+                    if autoCompleteList:
+                        editor.autoCSetSeparator(ord('\t'))
+                        editor.autoCSetIgnoreCase(False)
+                        editor.autoCSetCaseInsensitiveBehaviour(False)
+                        editor.autoCSetOrder(0)
+                        editor.autoCSetDropRestOfWord(True)
+                        editor.autoCShow(0, autoCompleteList)
+                else:
+                    ret = self.interp.getCallTip(line, var)
+                    if ret:
+                        element, nHighlight, calltip = ret
+                        if element == var =='False':
+                            self.activeCalltip = False
+                            editor.callTipShow(iStart, 'set to True')
+                        elif element == var =='True':
+                            self.activeCalltip = True
+                            editor.callTipShow(iStart, 'set to False')
+                        else:
+                            self.activeCalltip = 'doc'
+                            editor.callTipShow(iStart, ''.join(calltip))
+                            editor.callTipSetHlt(0, int(nHighlight))
+        elif self.popupForUnselectedVariable and iStart == iEnd and p >= 0:
+            iLine = editor.lineFromPosition(p)
+            line = editor.getLine(iLine)
+            iLineStart = editor.positionFromLine(iLine)
+            posInLine = p - iLineStart
+            iWordEnd=0
+            for iWordStart in range(posInLine, -1, -1):
+                s = line[iWordStart]
+                if not ('a' <= s <= 'z' or 'A' <= s <= 'Z' or '0' <= s <= '9' or s == '_'):
+                    iWordStart += 1
+                    break
+            if iWordStart <= posInLine:
+                for iWordEnd in range(posInLine+1, len(line)):
+                    s = line[iWordEnd]
+                    if not ('a' <= s <= 'z' or 'A' <= s <= 'Z' or '0' <= s <= '9' or s == '_'):
+                        iWordEnd -= 1
+                        break
+            var = line[iWordStart:iWordEnd+1]
+            if var:
+                var = line[iWordStart:iWordEnd+1]
+                ret = self.interp.getCallTip(line[0:iWordEnd+1], var)
+                pos = iLineStart + iWordStart
+                if ret:
+                    element, nHighlight, calltip = ret
+                    self.activeCalltip = 'doc'
+                    editor.callTipShow(pos, ''.join(calltip))
+                    editor.callTipSetHlt(0, int(nHighlight))
+
     def onCalltipClick(self, args):
         '''When clicked on the calltip write the full calltip in the output console.'''
         if self.bufferBusy or self.interp.kernelBusy.isSet(): return
@@ -593,42 +696,6 @@ class pyPad:
             editor.replaceSel('True')
         editor.callTipCancel()
         self.activeCalltip = None
-
-    def onMouseDwell(self, args):
-        '''Show a call tip window about the current content
-        of a selected variable'''
-        if self.bufferBusy or self.interp.kernelBusy.isSet(): return
-        if editor.callTipActive(): return
-        p = editor.positionFromPoint(args['x'], args['y'])
-        iStart = editor.getSelectionStart()
-        iEnd = editor.getSelectionEnd()
-        if iStart != iEnd and iStart <= p <= iEnd:
-            iLineStart = editor.positionFromLine(editor.lineFromPosition(iStart))
-            var = editor.getTextRange(iStart, iEnd)
-            line = editor.getTextRange(iLineStart, iEnd)
-            if var == '.':
-                autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iStart+1))
-                if autoCompleteList:
-                    editor.autoCSetSeparator(ord('\t'))
-                    editor.autoCSetIgnoreCase(False)
-                    editor.autoCSetCaseInsensitiveBehaviour(False)
-                    editor.autoCSetOrder(0)
-                    editor.autoCSetDropRestOfWord(True)
-                    editor.autoCShow(0, autoCompleteList)
-            else:
-                ret = self.interp.getCallTip(line, var)
-                if ret:
-                    element, nHighlight, calltip = ret
-                    if element == var =='False':
-                        self.activeCalltip = False
-                        editor.callTipShow(iStart, 'set to True')
-                    elif element == var =='True':
-                        self.activeCalltip = True
-                        editor.callTipShow(iStart, 'set to False')
-                    else:
-                        self.activeCalltip = 'doc'
-                        editor.callTipShow(iStart, ''.join(calltip))
-                        editor.callTipSetHlt(0, int(nHighlight))
 
     def onAutocomplete(self, args):
         '''Check if auto complete data can be added and displayed:
@@ -689,7 +756,7 @@ class EnhancedPythonLexer(object):
         end_position = editor.getLineEndPosition(line_number + editor.linesOnScreen())
         editor.setIndicatorCurrent(self.indicator)
         editor.indicatorClearRange(start_position, end_position-start_position)
-        
+
         flag = 0
         editor.research('^# ?%%(.*)$', lambda m: self.paint_it(self.indicator, m.span(flag)[0],
                 m.span(flag)[1] - m.span(flag)[0]), 0, start_position, end_position)

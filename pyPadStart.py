@@ -7,7 +7,7 @@
 # distribution of Notepad++ PythonScript is used. Some features are only
 # available for the external Python kernel. Python 3 is currently not
 # supported, only Python 2.
-
+#
 pythonPath = None
 
 # To use multiple interactive matplotlib windows, pyPadPlusPlus
@@ -17,13 +17,27 @@ pythonPath = None
 # is imported. In case matplotlib is imported implicitly by
 # another module, you must add to a code line a comment that
 # contains the word "matplotlib".
-
+#
 matplotlib_eventHandler = True
 
 # Cell highlighter underlines comments starting with #%% to highlight
 # code cells. This can slowdown Notpad++ during heavy computational load.
-
+#
 cellHighlight = True
+
+# mouseDwellTime in milliseconds sets the time until a popup is shown
+# when mouse movement stops at a certain variable.
+#
+mouseDwellTime=200
+
+# When set to False popups appear only with mouse hover over selected variables.
+#
+popupForUnselectedVariable = False
+
+# Evaluates any selected expression with mouse hover. Be carefull with this
+# option set to true, since selected functions can be called unintentionally. 
+#
+popupForSelectedExpression = False
 
 
 # Start pyPadPlusPlus
@@ -31,4 +45,7 @@ import Npp, pyPadPlusPlus
 Npp.pypad = pyPadPlusPlus.pyPad(
         externalPython=pythonPath,
         matplotlib_eventHandler=matplotlib_eventHandler,
-        cellHighlight=cellHighlight)
+        cellHighlight=cellHighlight,
+        popupForUnselectedVariable=popupForUnselectedVariable,
+        popupForSelectedExpression=popupForSelectedExpression,
+        mouseDwellTime=mouseDwellTime)

@@ -153,16 +153,22 @@ class interpreter:
 
     @fromPipe('F')
     def getCallTip(self, line, var, truncate=True):
-        element = introspect.getRoot(line)
+        if not line:
+            element = var
+        else:
+            element = introspect.getRoot(line)
         if len(element) < len(var): return
         try:
             object = eval(element, self.interp.locals)
         except:
             return
         if var in element:
-            try:
-                funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=self.interp.locals)
-            except:
+            if line:
+                try:
+                    funcName, funcParam, funcHelp = introspect.getCallTip(element, locals=self.interp.locals)
+                except:
+                    funcHelp = ''
+            else:
                 funcHelp = ''
             typ = str(type(object))
             if typ.startswith("<type '") and typ.endswith("'>"):
