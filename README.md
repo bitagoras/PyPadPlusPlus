@@ -9,7 +9,7 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 
 #### Features
 
-* Run Python code line by line
+* Run Python code line-by-line
 * Run selected Python code
 * Run line or selection with middle mouse button
 * Run cells of python code defined by `#%%` comments
