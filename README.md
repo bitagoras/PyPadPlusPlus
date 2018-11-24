@@ -14,9 +14,9 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 * Run line or selection with middle mouse button
 * Run cells of python code defined by `#%%` comments
 * Code completion for run-time defined object properties, dictionary keys, function calls
-* Calltip popup for function calls
-* Calltip popup to switch between `True` and `False`
-* Click on calltip shows full text in output console
+* Calltip popup for function calls, doc string and module help
+* Special popup to switch quickly between `True` and `False`
+* Click on popup to show full text in output console
 * Output console has an undo buffer
 * Object inspection for selected items with mouse hover
 * Color marker to highlight last executed lines
