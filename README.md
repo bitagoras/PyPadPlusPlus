@@ -1,5 +1,5 @@
 # PyPadPlusPlus
-### Notepad++ plugin for interactive Python development
+### Notepad++ and PythonScript addon for interactive Python development
 
 PyPadPlusPlus is a plugin for Notepad++ (https://notepad-plus-plus.org/) to interactivly work with Python. You can run your Python script interactively line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by a comment starting with `#%%`. You have always the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can execute any selected code or single line with one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of an element.
 
