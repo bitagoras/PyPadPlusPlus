@@ -25,6 +25,11 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 * Reset and restart Python kernel (e.g. when stuck in endless loop, not available when using the internal Python)
 * Matplotlib event handler to hold multiple active plot windows
 
+#### Roadmap
+Planned feature:
+* Remote kernel mode to run the code via network on any remote server that has Python installed, e.g. on raspberry PI.
+* Make Python client compatible to Python 3.x
+
 #### Download
 
 PyPadPlusPlus requires in PythonScript and Notepad++. Since the installation is quite cumbersome you can download the newest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) ready-to-play in a bundle with Notepad++ v7.6 and PythonScript v1.3.0.0 as portable version:
