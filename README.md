@@ -55,6 +55,7 @@ If you need to install PyPadPlusPlus in another version of Notepad++ you have to
     * `pyPadExecute.py     <Shift> + <Enter>`
     * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
     * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
+    * `Show Console        <Ctrl> + <Alt> + <C>`
     * `pyPadRestart.py     <Alt> + <R>`
     * `codeSnippetsLog.py  <Alt> + <S>`
 7. When Notepad++ does not allow you to define a shortcut on `<Shift> + <Enter>`, use `<Shift> + <Alt> + <Enter>` as preliminary shortcut. Then go to "Settings / Shortcut mapper / Scintilla commands" and unset `<Shift> + <Enter>` for `SCI_NEWLINE`. Now open `shortcuts.xml` in the Notepad++ Folder. Check if there is a line `<ScintKey ScintID="2329" menuCmdID="0" Ctrl="no" Alt="no" Shift="no" Key="13" />`. If not try to find it in the `C:\Users\<user name>\AppData\Roaming\Notepad++\` or  `C:\Users\<user name>\AppData\Local\Notepad++\` folder when Notepad++ was installed with the installer. Now search the line
