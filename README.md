@@ -38,14 +38,14 @@ If you need to install PyPadPlusPlus in another version of Notepad++ you have to
 2. Download the sources or the latest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) of PyPadPlusPlus and extract the files into the script folder of PythonScript:
   <br>`notepad++\plugins\PythonScript\scripts\`
 3. Open the file `pyPadStart.py` and set `pythonPath` to the path of your pythonw.exe file.
-4. Start Notepad++ and go to the menu "Plugins / Python Script / Configuration..."
+4. Start Notepad++ and go to the menu "Plugins → Python Script → Configuration..."
 5. Select "Machine Scripts" and add the scripts to Menu items:
     * `pyPadClear.py` clears the console output
     * `pyPadExecute.py` executes the current line or selection
     * `pyPadExecuteFix.py` same as pyPadExecute but keeps the cursor at its position
     * `pyPadRestart.py`  restarts the python kernel or cleans the variables
     * `codeSnippetsLog.py`  optional: to store code snippets
-6. Press OK, restart Notepad++ and go to menu "Settings / Shortcut mapper" and define in the tab "Plugin commands" the shortcuts:
+6. Press OK, restart Notepad++ and go to menu "Settings → Shortcut mapper" and define in the tab "Plugin commands" the shortcuts:
     * `pyPadExecute.py     <Shift> + <Enter>`
     * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
     * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
