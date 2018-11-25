@@ -1,9 +1,9 @@
 # PyPadPlusPlus
 ### Notepad++ and PythonScript addon for interactive Python development
 
-PyPadPlusPlus is an addon for Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/) to interactivly work with Python. You can run your Python script line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by comments starting with `#%%`. You have always the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can execute any selected code or single line with one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of an element.
+PyPadPlusPlus is an addon for Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/) to interactivly work with Python. You can run your Python script line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by comments starting with `#%%`. You have always the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can execute any selected code or single lines with one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of a variable.
 
-Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you like to remember but you don't know where to store it. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can use this function to log your finding in this "Python diary". Some month later when you have a déjà vu at the same problem you can have a look in the code-snippets log file. You can run in directly from this file.
+Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you like to remember but you don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can log it as a kind of "Python diary". Some month later a déjà vu at the same problem can remember you to have a look in the code-snippets log file. You can run in directly from this file where everey log is added as a code cell.
 
   <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/demo/pyPadDemo.gif">  
 
@@ -13,14 +13,14 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 * Run selected Python code
 * Run line or selection with middle mouse button
 * Run cells of python code defined by `#%%` comments
-* Code completion for run-time defined object properties, dictionary keys, function calls
-* Calltip popup for function calls, doc string and module help
-* Special popup to switch quickly between `True` and `False`
-* Click on popup to show full text in output console
-* Output console has an undo buffer
-* Object inspection for selected items with mouse hover
 * Color marker to highlight last executed lines
 * Animated color marker for active lines
+* Code auto completion for run-time defined object properties, dictionary keys, function calls
+* Calltip popup for function calls, doc string and module help
+* Special popup to switch quickly between `True` and `False`
+* Click on popup to show full string or help text in output console
+* Output console has an undo buffer
+* Object inspection for selected items with mouse hover
 * Internal or external Python distribution
 * Reset and restart Python kernel (e.g. when stuck in endless loop, not available when using the internal Python)
 * Matplotlib event handler to hold multiple active plot windows
