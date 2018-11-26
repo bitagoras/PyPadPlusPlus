@@ -14,7 +14,7 @@ import introspect  # Module for code introspection from the wxPython project
 import traceback
 import threading
 import textwrap
-import pyPadHost
+import pyPadHost#, pyPadRemoteHost
 import pyPadClient
 from math import sin, pi
 
@@ -72,6 +72,7 @@ class pyPad:
         self.externalPython = bool(externalPython)
         if self.externalPython:
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
+            #self.interp = pyPadRemoteHost.interpreter(host="127.0.0.5", port=8888, outBuffer=self.outBuffer)
         else:
             self.interp = pyPadClient.interpreter()
 
