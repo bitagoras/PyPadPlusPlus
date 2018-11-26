@@ -1,5 +1,5 @@
 # PyPadPlusPlus
-### Notepad++ and PythonScript addon for interactive Python development
+### Addon for Notepad++ and PythonScript for interactive Python development
 
 PyPadPlusPlus is an addon for Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/) to interactivly work with Python. You can run your Python script line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by comments starting with `#%%`. You have always the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can execute any selected code or single lines with one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of a variable.
 
@@ -32,7 +32,7 @@ Planned feature:
 
 #### Download
 
-PyPadPlusPlus requires in PythonScript and Notepad++. Since the installation is quite cumbersome you can download the newest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) ready-to-play in a bundle with Notepad++ v7.6 and PythonScript v1.3.0.0 as portable version:
+PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is quite cumbersome you can download the newest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) ready-to-play in a bundle with Notepad++ v7.6 and PythonScript v1.3.0.0 as portable version:
 * Download [`Npp7.6_32bit_PyPadPlusPlus1.1.0.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.1.0/Npp7.6_32bit_PyPadPlusPlus1.1.0.zip), unzip it into a folder and start `notepad++.exe`.
 
 #### Installation
