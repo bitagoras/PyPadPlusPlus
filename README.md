@@ -1,19 +1,19 @@
 # PyPadPlusPlus
 ### Addon for Notepad++ and PythonScript for interactive Python development
 
-PyPadPlusPlus is an addon for Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/) to interactivly work with Python. You can run your Python script line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by comments starting with `#%%`. You have always the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can execute any selected code or single lines with one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of a variable.
+PyPadPlusPlus is an addon for Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/) to interactivly work with Python. You can run your Python script line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by comments starting with `#%%`. You have always the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can execute any selected code or single lines by one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of any variable.
 
-Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you like to remember but you don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can log it as a kind of "Python diary". Some month later a déjà vu at the same problem can remember you to have a look in the code-snippets log file. You can run in directly from this file where everey log is added as a code cell.
+Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you like to remember but you don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can log it as a kind of "Python diary". Some month later with a déjà vu at the same problem you have a look in the code-snippets log file. You can run it directly from this file where every log entry is a code cell.
 
   <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/demo/pyPadDemo.gif">  
 
 #### Features
 
 * Run Python code line-by-line
-* Run selected Python code
+* Run selected Python code (intelligent selection, no accurate selection is required)
 * Run line or selection with middle mouse button
 * Run cells of python code defined by `#%%` comments
-* Color marker to highlight last executed lines
+* A color marker highlights last executed lines
 * Animated color marker for active lines
 * Code auto completion for run-time defined object properties, dictionary keys, function calls
 * Calltip popup for function calls, doc string and module help
