@@ -189,9 +189,13 @@ class interpreter:
                 else:
                     value = textFull
                     if truncate: value = self.maxCallTip(textFull)
-                    if hasattr(object, '__len__'):
-                        calltip = 'type: ', typ + ', len: %i'%len(object), '\nstr: ', ('\n' if '\n' in value else '') + value
-                    else:
+                    try:
+                        l = len(object)
+                        if hasattr(object, 'shape') and type(object.shape) is tuple and len(object.shape) <= 4:
+                            calltip = 'type: ', typ + ', len: %i'%l, ', shape: %s'%str(tuple(int(i) for i in object.shape)), '\nstr: ', ('\n' if '\n' in value else '') + value
+                        else:
+                            calltip = 'type: ', typ + ', len: %i'%l, '\nstr: ', ('\n' if '\n' in value else '') + value
+                    except:
                         calltip = 'type: ', typ, '\nstr: ', ('\n' if '\n' in value else '') + value
             self.fullCallTip = var, calltip[:-1] + (textFull,)
         nHighlight = 0
