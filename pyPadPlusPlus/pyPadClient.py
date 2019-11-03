@@ -10,11 +10,10 @@ from codeop import compile_command
 import traceback
 import textwrap
 import threading
+import introspect
 if PY3:
-    import introspect3 as introspect
     import queue
 else:
-    import introspect
     import Queue as queue
 from copy import copy
 try:
@@ -162,7 +161,7 @@ class interpreter:
         try:
             object = eval(element, self.interp.locals)
         except:
-            return var, str(0), 'Error'
+            return var, str(0), 'Invalid expression'
         if var in element:
             if line:
                 try:

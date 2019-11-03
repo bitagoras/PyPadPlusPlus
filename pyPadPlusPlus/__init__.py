@@ -10,12 +10,11 @@ import Npp
 from Npp import editor, console, notepad
 import code, sys, time, os
 from codeop import compile_command
-import introspect  # Module for code introspection from the wxPython project
+#import introspect  # Module for code introspection from the wxPython project
 import traceback
 import threading
 import textwrap
 import pyPadHost#, pyPadRemoteHost
-import pyPadClient
 from math import sin, pi
 
 from ctypes import windll, Structure, c_ulong, byref
@@ -74,6 +73,7 @@ class pyPad:
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
             #self.interp = pyPadRemoteHost.interpreter(host="127.0.0.5", port=8888, outBuffer=self.outBuffer)
         else:
+            import pyPadClient
             self.interp = pyPadClient.interpreter()
 
         if cellHighlight:
@@ -293,7 +293,12 @@ class pyPad:
             iEnd = iMatch[0] if len(iMatch) else iDocEnd
             iLineEnd = editor.lineFromPosition(iEnd)
             block = editor.getTextRange(iStart, iEnd).rstrip()
-            err, requireMore, isValue = self.interp.tryCode(iLineStart, filename, block)
+            r = self.interp.tryCode(iLineStart, filename, block)
+            if r is None:
+                self.hideMarkers(bufferID)
+                self.bufferActive = 0
+                return
+            err, requireMore, isValue = r
             if requireMore:
                 err = True
 
@@ -718,6 +723,7 @@ class pyPad:
         if args['ch'] == 46 and args['code'] == 2001: # character "."
             iPos = editor.getCurrentPos()
             autoCompleteList = self.interp.autoCompleteObject(self.getUncompleteLine(iPos))
+            if autoCompleteList is None: return
             if autoCompleteList:
                 editor.autoCSetSeparator(ord('\t'))
                 editor.autoCSetIgnoreCase(False)
@@ -727,7 +733,9 @@ class pyPad:
                 editor.autoCShow(0, autoCompleteList)
         elif args['ch'] == 40 and args['code'] == 2001: # character "("
             iPos = editor.getCurrentPos()
-            n, funcParam, callTip = self.interp.autoCompleteFunction(self.getUncompleteLine(iPos))
+            r = self.interp.autoCompleteFunction(self.getUncompleteLine(iPos))
+            if r is None: return
+            n, funcParam, callTip = r
             if callTip:
                 editor.callTipShow(max(0,iPos-n), callTip)
                 editor.callTipSetHlt(0, max(0, callTip.find('\n')))

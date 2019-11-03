@@ -83,7 +83,7 @@ class interpreter:
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         universal_newlines=True)
-        time.sleep(0.5)
+        time.sleep(0.1)
         self.buffer = []
         self.kernelAlive.set()
 
