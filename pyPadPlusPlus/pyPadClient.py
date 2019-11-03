@@ -2,6 +2,16 @@
 # PyPadPlusPlus: Module running in Python subprocess
 #
 
+def log(*s):
+    if len(s) > 0:
+        with open(r'C:\Users\Christian\Desktop\Npp7.7_py3\logPy.txt', 'a') as f:
+            f.write(' '.join(str(i) for i in s) + '\n')
+    else:
+        with open(r'C:\Users\Christian\Desktop\Npp7.7_py3\logPy.txt', 'w') as f:
+            f.write('---\n')
+
+#log()
+
 import sys, os
 PY3 = sys.version_info[0] == 3
 import code, time
@@ -51,14 +61,14 @@ class PseudoFileOutBuffer:
         self.buffer.write(s, True)
 
 pipedFunctions = {}
-def fromPipe(symbol):
+def fromPipe(commandId):
     def decorator(func):
         global pipedFunctions
-        pipedFunctions[symbol] = func
+        pipedFunctions[commandId] = func
         return func
     return decorator
 
-class interpreter:
+class clientInterpreter:
     def __init__(self):
         self.buffer = bufferOut()
         self.stdout = sys.stdout
@@ -72,16 +82,18 @@ class interpreter:
         self.interp = code.InteractiveInterpreter(self.userLocals)
         self.kernelBusy = threading.Event()
         os.chdir(os.path.expanduser("~"))
-        
+
     def restartKernel(self):
         self.userLocals = {}
         self.interp = code.InteractiveInterpreter(self.userLocals)
         print("Kernel reset.")
-        
+
     @fromPipe('A')
     def flush(self):
+        #log('in flush')
         err = False
         result = self.buffer.read()
+        #log('in flush:', repr(result))
         return err, result
 
     @fromPipe('B')
@@ -262,49 +274,71 @@ class interpreter:
             tblist = tb = None
         map(sys.stderr, list)
 
+    @fromPipe('L')
+    def showtraceback(self):
+        """Stops the kernel"""
+        exit()
 
 def startLocalClient():
 
-    interp = interpreter()
+    clientInterp = clientInterpreter()
 
     dataQueueOut = queue.Queue()
     dataQueueIn = queue.Queue()
-    
-    stdin = interp.stdin.buffer if PY3 else interp.stdin
-    
+    #dataQueueInThread = queue.Queue()
+
+    stdin = clientInterp.stdin.buffer if PY3 else clientInterp.stdin
+
     def communicationLoop():
+        #log("Client:")
         while True:
-            # receive the id of the function
-            command = interp.stdin.read(1)
-
-            # unpickle the received data
-            dataFromPipe = pickle.load(stdin)
-            
+            # receive the id and input of the function
+            #log("Client communication loop. Wait for command.")
+            #data = None
+            #log("client type pre: s%\n"%type(data))
+            #while data is None:
+            #    try:
+            #        data = stdin.readline()
+            #    except:
+            #        time.sleep(1)
+            data = stdin.readline()
+            commandId, dataIn = eval(data)
+            #log("client received:", commandId, dataIn)
             # to queue for execution in main thread
-            dataQueueIn.put((command, dataFromPipe))
+            if commandId in 'CD':
+                #log('enqueue:'+repr((commandId, dataIn)))
+                dataQueueIn.put((commandId, dataIn))
+                #log('enqueue done:'+repr((commandId, dataIn)))
+            else:
+                #dataQueueInThread.put((commandId, dataIn))
+                # log("direct execution...")
+                # commandId, dataIn = dataQueueInThread.get()
+                #log('direct execution '+ repr((commandId, dataIn)))
+                dataToPipe = pipedFunctions[commandId](clientInterp, *dataIn)
+                #log('direct execution result: '+ repr(dataToPipe))
+                dataQueueOut.put((commandId, dataToPipe))
 
-            # loop while flushing the stdout buffer
-            dataToPipe = None
-            while dataToPipe is None:
-                # wait for answer of function from queue
-                try:
-                    dataToPipe = (dataQueueOut.get(timeout=0.05),)
-                except:
-                    dataToPipe = None
-                buffer = interp.buffer.read()
-                if buffer:
-                    ret = pickle.dumps(('B', buffer), -1)
-                    interp.stdout.write(ret)
-
-            # pickle the result of the function
-            ret = pickle.dumps(('A', dataToPipe[0]), -1)
-
-            # send the resulting answer to the pipe
-            interp.stdout.write(ret)
+            # Send back answer from output queue
+            answers = []
+            while not dataQueueOut.empty():
+                answers.append(dataQueueOut.get())
+            #log('send answers:', answers)
+            clientInterp.stdout.write(repr(answers)+'\n')
 
     thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
     thread.start()
-        
+
+    # def threadExecutionLoop():
+        # while True:
+            # commandId, dataIn = dataQueueInThread.get()
+            # log('execution loop: '+ repr((commandId, dataIn)))
+            # dataToPipe = pipedFunctions[commandId](clientInterp, *dataIn)
+            # log('execution loop result: '+ repr(dataToPipe))
+            # dataQueueOut.put((commandId, dataToPipe))
+
+    # executionThread = threading.Thread(name='threadExecutionLoop', target=threadExecutionLoop, args=())
+    # executionThread.start()
+
     def matplotlib_eventHandler(interval):
         backend = matplotlib.rcParams['backend']
         if backend in _interactive_bk:
@@ -326,14 +360,16 @@ def startLocalClient():
     while thread.is_alive():
         while dataQueueIn.empty():
             wait()
-        command, dataFromPipe = dataQueueIn.get()
-        dataToPipe = pipedFunctions[command](interp, *dataFromPipe)
-        dataQueueOut.put(dataToPipe)
-
+        commandId, dataFromPipe = dataQueueIn.get()
+        #log("got task %s: "%commandId, repr(dataFromPipe))
+        dataToPipe = pipedFunctions[commandId](clientInterp, *dataFromPipe)
+        #log("got answer %s: "%commandId, repr(dataToPipe))
+        dataQueueOut.put((commandId, dataToPipe))
+    #log("The end")
 #
 # Main function for the pyPadClient to run inside the python subprocess.
 #
 if __name__ == '__main__':
-    active_matplotlib_eventHandler = False   
+    active_matplotlib_eventHandler = False
     startLocalClient()
     exit()

@@ -1,24 +1,65 @@
 #
 # PyPadPlusPlus: pyPadHost, module to call Python in subprocess
 #
-
-import subprocess, os, time
+import os, time
 from Npp import console
-import threading, Queue
+import subprocess, threading, Queue
+import multiprocessing.queues
 try:
    import cPickle as pickle
 except:
    import pickle
 
-def toPipe(symbol):
+queueOut = multiprocessing.queues.Queue(maxsize=5)
+
+class quantizedChannel:
+    def __init__(self, commandId, timeout=1):
+        self.receiveQueue = multiprocessing.queues.Queue(maxsize=1)
+        self.timeout = timeout
+        self.sendLock = threading.Lock()
+        self.commandId = commandId
+
+    def __call__(self, arg=None):
+        if kernelAlive.isSet():
+            with self.sendLock:
+                if self.receiveQueue.empty():
+                    try:
+                        queueOut.put_nowait((self.commandId, arg))
+                        #print "queue filled with: "+repr((self.commandId, arg))
+                    except:
+                        #print "queue %s full"%self.commandId
+                        return None
+                try:
+                    #print "channel %s wait for answer"%self.commandId
+                    ret = self.receiveQueue.get(block=True, timeout=self.timeout)
+                    #print "channel answer:", ret
+                except:
+                    print "timeout", self.commandId
+                    return None
+            return ret
+        else:
+            return None
+
+    def clear(self):
+        while not queueOut.empty():
+            queueOut.get_nowait()
+
+receiveChannels = {}
+receiveQueues = {}
+def toPipe(symbol, timeout=1):
+    channel = quantizedChannel(symbol, timeout=timeout)
+    receiveChannels[symbol] = channel
+    receiveQueues[symbol] = channel.receiveQueue
     def decorator(func):
         def pipeWrapper(self, *param):
-            return self.pipeQueue(symbol, param)
+            return channel(param)
         return pipeWrapper
-    return decorator   
-   
+    return decorator
+
 class interpreter:
     def __init__(self, pythonPath='pythonw', outBuffer=None):
+        global kernelAlive
+        self.queueIn = Queue.Queue()
         if not pythonPath.endswith('.exe'):
             if pythonPath.strip().endswith('pythonw'):
                 pythonPath = pythonPath.strip() + '.exe'
@@ -28,14 +69,16 @@ class interpreter:
         self.outBuffer = outBuffer
         clientPath = os.path.join(os.path.dirname(__file__), 'pyPadClient.py')
         self.StartCommand = pythonPath + ' -u ' + '"' + clientPath + '"'
-        self.dataQueueOut = Queue.Queue()
-        self.dataQueueIn = Queue.Queue()
-        self.kernelBusy = threading.Event()
-        self.kernelAlive = threading.Event()
+        print "start kernel:", self.StartCommand
+        self.kernelActive = threading.Event()
+        self.kernelAlive = kernelAlive = threading.Event()
         self.startNewKernel()
         self.thread = threading.Thread(name='communicationLoop', target=self.communicationLoop, args=())
         self.thread.start()
-        
+
+    def active(self):
+        return self.kernelActive.isSet()
+
     def startNewKernel(self):
         self.proc = subprocess.Popen(self.StartCommand,
                         stdin=subprocess.PIPE,
@@ -47,116 +90,110 @@ class interpreter:
         self.kernelAlive.set()
 
     def restartKernel(self):
-        self.kernelBusy.set()
         self.kernelAlive.clear()
-        self.dataQueueOut.queue.clear()
-        self.dataQueueIn.queue.clear()
+        self.kernelActive.set()
+        #self.clearQueue()
         self.proc.terminate()
         time.sleep(0.1)
         self.startNewKernel()
-        time.sleep(0.1)
-        self.kernelAlive.set()
-        self.kernelBusy.clear()
-        print("Python kernel restarted.")
-        
+        self.kernelActive.clear()
+        print "Python kernel restarted."
+
     def __del__(self):
         self.kernelAlive.clear()
         self.stopProcess()
-        
-    def pipeQueue(self, id, data=()):
+
+    def pipeQueue(self, commandId, data=()):
         if self.kernelAlive.isSet():
-            self.dataQueueOut.put((id, data))
-            return self.dataQueueIn.get()
+            queueOut.put((commandId, data))
+            return self.queueIn.get()
         else:
             return None
 
     def clearQueue(self):
-        while not self.dataQueueOut.empty():
-            self.dataQueueOut.queue.clear()
-            self.dataQueueIn.put(None)
+        global queueOut
+        queueOut.close()
+        queueOut = multiprocessing.queues.Queue(maxsize=5)
+        self.queueIn.queue.clear()
+        for k,i in receiveChannels.items():
+            i.clear()
             
     def communicationLoop(self):
         while True:
             self.kernelAlive.wait()
-        
-            # only if the queue is empty the flush thread should request data
-            if self.dataQueueOut.empty():
-                if self.kernelAlive.isSet():
-                    self.kernelBusy.clear()
 
-            # from queue id and data of function
-            id, dataToPipe = self.dataQueueOut.get()
+            # # only if the output queue is empty the flush thread should request data
+            if queueOut.empty():
+                if self.kernelAlive.isSet():
+                    self.kernelActive.clear()
+
+            #print 'wait for command...'
+            # from queue commandId and data of function
+            commandId, dataToPipe = queueOut.get()
+            
+            if not self.kernelAlive.isSet(): continue
 
             # set communication loop to busy
-            self.kernelBusy.set()
-            
-            # write the id of the function
+            if commandId in "BCD":
+                self.kernelActive.set()
+
+            # write the commandId of the function
             try:
-                self.proc.stdin.write(id)
+                # send data
+                self.proc.stdin.write(repr((commandId, dataToPipe))+'\n')
+                #print 'written:', repr((commandId, dataToPipe))
             except:
-                self.dataQueueIn.put(None)
-                print("Python kernel not responding.")
-                self.kernelAlive.clear()
-                self.kernelBusy.set()
+                if self.kernelAlive:
+                    print "Python kernel not responding." 
+                    self.kernelAlive.clear()
                 continue
-            
-            # send data
-            pickle.dump(dataToPipe, self.proc.stdin, -1)
-            
+
             # flush channel for immidiate transfer
             if self.kernelAlive.isSet(): self.proc.stdin.flush()
 
-            returnType = None
-            while returnType != 'A':
-            
-                # unpickle the received data
-                try:
-                    assert self.kernelAlive.isSet()
-                    returnType, dataFromPipe = pickle.load(self.proc.stdout)
-                except:
-                    dataFromPipe = None
-                    break
+            #print 'wait for answer...'
+            answers = eval(self.proc.stdout.readline())
 
-                if returnType == 'B':
-                    # unpickle the received buffer
-                    self.outBuffer(dataFromPipe)
+            #print "received answers:", repr(answers)
 
             # answer to queue
-            self.dataQueueIn.put(dataFromPipe)
+            for commandId, dataFromPipe in answers:
+                receiveQueues[commandId].put(dataFromPipe)
+                if commandId in 'BCD':
+                    self.kernelActive.clear()
 
     @toPipe('A')
     def flush(self): pass
-    
-    @toPipe('B')
+
+    @toPipe('B', timeout=None)
     def tryCode(self, iLineStart, filename, block): pass
-    
-    @toPipe('C')
+
+    @toPipe('C', timeout=None)
     def evaluate(self): pass
-    
-    @toPipe('D')
+
+    @toPipe('D', timeout=None)
     def execute(self, string=None): pass
-    
+
     @toPipe('E')
     def maxCallTip(self, value): pass
-    
+
     @toPipe('F')
     def getCallTip(self, line, var, truncate=True): pass
-    
+
     @toPipe('G')
     def getFullCallTip(self): pass
-    
+
     @toPipe('H')
     def autoCompleteObject(self, linePart): pass
-    
+
     @toPipe('I')
     def autoCompleteFunction(self, linePart): pass
-    
+
     @toPipe('J')
     def autoCompleteDict(self, linePart): pass
-    
+
     @toPipe('K')
     def showtraceback(self): pass
-            
-    @toPipe('X')
+
+    @toPipe('L')
     def stopProcess(self): pass
-    
