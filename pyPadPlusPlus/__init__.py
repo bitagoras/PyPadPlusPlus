@@ -786,7 +786,7 @@ class EnhancedPythonLexer(object):
         self.__is_lexer_doc = bool_value
 
     def on_bufferactivated(self,args):
-        if (self.get_lexer_name() == self.lexer_name) and (editor.getPropertyInt(self.__class__.__name__) != -1):
+        if (self.get_lexer_name() == self.lexer_name):# and (editor.getPropertyInt(self.__class__.__name__) != -1):
             self.__is_lexer_doc = True
         else:
             self.__is_lexer_doc = False
