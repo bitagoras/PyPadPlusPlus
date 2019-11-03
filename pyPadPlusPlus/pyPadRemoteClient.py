@@ -2,6 +2,8 @@
 # PyPadPlusPlus: Module running in Python subprocess
 #
 
+# todo: finish
+
 import sys, os, socket
 PY3 = sys.version_info[0] == 3
 import code, time

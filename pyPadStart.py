@@ -2,11 +2,12 @@
 # PyPadPlusPlus: Startup script
 #
 
-# Set the path to the folder that contains pythonw.exe, e.g.
-# "C:\\programs\\Anaconda2". If pythonPath is None, the internal Python
-# distribution of Notepad++ PythonScript is used. Some features are only
-# available for the external Python kernel. Python 3 is currently not
-# supported, only Python 2.
+# Set the path to the Python file or the folder that contains pythonw.exe, 
+# e.g. "C:\\programs\\Anaconda3". If pythonPath is None, the internal Python
+# distribution of Notepad++ PythonScript is used. Kernel restart features is 
+# only available for the external Python kernel. Python 2.x and 3.x
+# are supported. Make sure that the environment variables are set for the
+# loaded Python installation.
 #
 pythonPath = None
 
@@ -21,7 +22,7 @@ pythonPath = None
 matplotlib_eventHandler = True
 
 # Cell highlighter underlines comments starting with #%% to highlight
-# code cells. This can slowdown Notpad++ during heavy computational load.
+# code cells. This can slowdown Notepad++ during heavy computational load.
 #
 cellHighlight = True
 
@@ -39,6 +40,8 @@ popupForUnselectedVariable = False
 #
 popupForSelectedExpression = False
 
+# The latter two options are recommended to be set to false. The two features
+# are allways active for the defined keyboard shortcut to script pyPadCalltip.py.
 
 # Start pyPadPlusPlus
 import Npp, pyPadPlusPlus

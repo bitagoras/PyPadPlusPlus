@@ -17,6 +17,7 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 * Animated color marker for active lines
 * Code auto completion for run-time defined object properties, dictionary keys, function calls
 * Calltip popup for function calls, doc string and module help
+* Evaluate any selected expression while code is running
 * Special popup to switch quickly between `True` and `False`
 * Click on popup to show full string or help text in output console
 * Output console has an undo buffer
@@ -28,7 +29,6 @@ Another little optional feature fits perfectly in the workflow of PyPadPlusPlus 
 #### Roadmap
 Planned feature:
 * Remote kernel mode to run the code via network on any remote server that has Python installed, e.g. on raspberry PI.
-* Make Python client compatible to Python 3.x
 
 #### Download
 
@@ -55,6 +55,7 @@ If you need to install PyPadPlusPlus in another version of Notepad++ you have to
     * `pyPadExecute.py     <Shift> + <Enter>`
     * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
     * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
+    * `pyPadCalltip.py     <Shift> + <Ctrl> + <Space>`
     * `Show Console        <Ctrl> + <Alt> + <C>`
     * `pyPadRestart.py     <Alt> + <R>`
     * `codeSnippetsLog.py  <Alt> + <S>`

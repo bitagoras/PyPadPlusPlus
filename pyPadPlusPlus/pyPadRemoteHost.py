@@ -2,6 +2,8 @@
 # PyPadPlusPlus: pyPadHost, module to call Python in subprocess
 #
 
+# todo: finish
+
 import subprocess, os, time
 import socket
 from Npp import console
