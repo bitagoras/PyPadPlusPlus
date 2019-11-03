@@ -2,28 +2,19 @@
 # PyPadPlusPlus: Module running in Python subprocess
 #
 
-def log(*s):
-    if len(s) > 0:
-        with open(r'C:\Users\Christian\Desktop\Npp7.7_py3\logPy.txt', 'a') as f:
-            f.write(' '.join(str(i) for i in s) + '\n')
-    else:
-        with open(r'C:\Users\Christian\Desktop\Npp7.7_py3\logPy.txt', 'w') as f:
-            f.write('---\n')
-
-#log()
-
 import sys, os
-PY3 = sys.version_info[0] == 3
+PY3 = sys.version_info[0] >= 3
 import code, time
 from types import ModuleType
-import introspect  # Module for code introspection from the wxPython project
 from codeop import compile_command
 import traceback
 import textwrap
 import threading
 if PY3:
+    import introspect3 as introspect
     import queue
 else:
+    import introspect
     import Queue as queue
 from copy import copy
 try:
@@ -68,7 +59,7 @@ def fromPipe(commandId):
         return func
     return decorator
 
-class clientInterpreter:
+class interpreter:
     def __init__(self):
         self.buffer = bufferOut()
         self.stdout = sys.stdout
@@ -90,10 +81,8 @@ class clientInterpreter:
 
     @fromPipe('A')
     def flush(self):
-        #log('in flush')
         err = False
         result = self.buffer.read()
-        #log('in flush:', repr(result))
         return err, result
 
     @fromPipe('B')
@@ -173,7 +162,7 @@ class clientInterpreter:
         try:
             object = eval(element, self.interp.locals)
         except:
-            return
+            return var, str(0), 'Error'
         if var in element:
             if line:
                 try:
@@ -265,7 +254,7 @@ class clientInterpreter:
             sys.last_value = value
             sys.last_traceback = tb
             tblist = traceback.extract_tb(tb)
-            del tblist[:2]
+            #del tblist[:2]
             list = traceback.format_list(tblist)
             if list:
                 list.insert(0, "Traceback (most recent call last):\n")
@@ -280,64 +269,34 @@ class clientInterpreter:
         exit()
 
 def startLocalClient():
-
-    clientInterp = clientInterpreter()
-
+    clientInterp = interpreter()
     dataQueueOut = queue.Queue()
     dataQueueIn = queue.Queue()
-    #dataQueueInThread = queue.Queue()
-
     stdin = clientInterp.stdin.buffer if PY3 else clientInterp.stdin
 
     def communicationLoop():
-        #log("Client:")
         while True:
             # receive the id and input of the function
-            #log("Client communication loop. Wait for command.")
-            #data = None
-            #log("client type pre: s%\n"%type(data))
-            #while data is None:
-            #    try:
-            #        data = stdin.readline()
-            #    except:
-            #        time.sleep(1)
             data = stdin.readline()
             commandId, dataIn = eval(data)
-            #log("client received:", commandId, dataIn)
             # to queue for execution in main thread
             if commandId in 'CD':
-                #log('enqueue:'+repr((commandId, dataIn)))
                 dataQueueIn.put((commandId, dataIn))
-                #log('enqueue done:'+repr((commandId, dataIn)))
             else:
-                #dataQueueInThread.put((commandId, dataIn))
-                # log("direct execution...")
-                # commandId, dataIn = dataQueueInThread.get()
-                #log('direct execution '+ repr((commandId, dataIn)))
-                dataToPipe = pipedFunctions[commandId](clientInterp, *dataIn)
-                #log('direct execution result: '+ repr(dataToPipe))
+                try:
+                    dataToPipe = pipedFunctions[commandId](clientInterp, *dataIn)
+                except:
+                    dataToPipe = None
                 dataQueueOut.put((commandId, dataToPipe))
 
             # Send back answer from output queue
             answers = []
             while not dataQueueOut.empty():
                 answers.append(dataQueueOut.get())
-            #log('send answers:', answers)
             clientInterp.stdout.write(repr(answers)+'\n')
 
     thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
     thread.start()
-
-    # def threadExecutionLoop():
-        # while True:
-            # commandId, dataIn = dataQueueInThread.get()
-            # log('execution loop: '+ repr((commandId, dataIn)))
-            # dataToPipe = pipedFunctions[commandId](clientInterp, *dataIn)
-            # log('execution loop result: '+ repr(dataToPipe))
-            # dataQueueOut.put((commandId, dataToPipe))
-
-    # executionThread = threading.Thread(name='threadExecutionLoop', target=threadExecutionLoop, args=())
-    # executionThread.start()
 
     def matplotlib_eventHandler(interval):
         backend = matplotlib.rcParams['backend']
@@ -361,11 +320,8 @@ def startLocalClient():
         while dataQueueIn.empty():
             wait()
         commandId, dataFromPipe = dataQueueIn.get()
-        #log("got task %s: "%commandId, repr(dataFromPipe))
         dataToPipe = pipedFunctions[commandId](clientInterp, *dataFromPipe)
-        #log("got answer %s: "%commandId, repr(dataToPipe))
         dataQueueOut.put((commandId, dataToPipe))
-    #log("The end")
 #
 # Main function for the pyPadClient to run inside the python subprocess.
 #

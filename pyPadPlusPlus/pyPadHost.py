@@ -25,14 +25,12 @@ class quantizedChannel:
                 if self.receiveQueue.empty():
                     try:
                         queueOut.put_nowait((self.commandId, arg))
-                        #print "queue filled with: "+repr((self.commandId, arg))
                     except:
-                        #print "queue %s full"%self.commandId
+                        print "Python kernel not responding."
+                        kernelAlive.clear()
                         return None
                 try:
-                    #print "channel %s wait for answer"%self.commandId
                     ret = self.receiveQueue.get(block=True, timeout=self.timeout)
-                    #print "channel answer:", ret
                 except:
                     print "timeout", self.commandId
                     return None
@@ -85,7 +83,7 @@ class interpreter:
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         universal_newlines=True)
-        time.sleep(0.1)
+        time.sleep(0.5)
         self.buffer = []
         self.kernelAlive.set()
 
@@ -117,7 +115,7 @@ class interpreter:
         self.queueIn.queue.clear()
         for k,i in receiveChannels.items():
             i.clear()
-            
+
     def communicationLoop(self):
         while True:
             self.kernelAlive.wait()
@@ -127,10 +125,9 @@ class interpreter:
                 if self.kernelAlive.isSet():
                     self.kernelActive.clear()
 
-            #print 'wait for command...'
             # from queue commandId and data of function
             commandId, dataToPipe = queueOut.get()
-            
+
             if not self.kernelAlive.isSet(): continue
 
             # set communication loop to busy
@@ -141,20 +138,19 @@ class interpreter:
             try:
                 # send data
                 self.proc.stdin.write(repr((commandId, dataToPipe))+'\n')
-                #print 'written:', repr((commandId, dataToPipe))
             except:
                 if self.kernelAlive:
-                    print "Python kernel not responding." 
+                    print "Python kernel not responding."
                     self.kernelAlive.clear()
                 continue
 
             # flush channel for immidiate transfer
             if self.kernelAlive.isSet(): self.proc.stdin.flush()
 
-            #print 'wait for answer...'
-            answers = eval(self.proc.stdout.readline())
-
-            #print "received answers:", repr(answers)
+            try:
+                answers = eval(self.proc.stdout.readline())
+            except:
+                continue
 
             # answer to queue
             for commandId, dataFromPipe in answers:
