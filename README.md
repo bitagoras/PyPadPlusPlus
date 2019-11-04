@@ -3,7 +3,7 @@
 
 PyPadPlusPlus is an interactive Python environment based on Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/).
 
-It's concept is to fuse the interactive Python shell and the editor to one single tool. This frees you from having to copy code from the editor to the interactive shell and back, depending on whether you want to work interactivly with that piece of code or conserve it permanently in your algorithm.
+It's concept is to fuse the interactive Python shell and the editor to one single tool and to unify the advantages of both. This prevents you from having to copy code from the editor to the interactive shell or back, depending on whether you want to work interactively with the code or keep it permanently in your algorithm. Instead, your editor becomes an interactive workbench where your algorithm is tried out piece by piece and finally assembled.
 
 The editor acts as an interactiv shell. To execute one line or a piece of code press `<Shift> + <Enter>`. This will run the current line or the smallest piece of code the can run individually. By selecting several lines (or the whole script with `<Ctrl> + <A>`) you can execute any part of your program. Cells of code can be defined by special comments starting with `#%%`. You have always the choice whether you want to execute cells, single lines or code selections. With the mouse wheel button you can execute any line or code piece by one click. The output is shown in an output console frame. The console has an undo buffer for every execution that produced any output.
 
