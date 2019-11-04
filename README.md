@@ -32,7 +32,7 @@ Planned feature:
 
 #### Download
 
-PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is quite cumbersome you can download the newest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) ready-to-play in a bundle with Notepad++ v7.7 and PythonScript v1.4.0.0 as portable version:
+PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is quite cumbersome you can download the newest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) ready-to-play in a bundle with Notepad++ v7.8 and PythonScript v1.5.2.0 as portable version:
 * Download [`Npp7.8_32bit_PyPadPlusPlus1.2.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/1.2.0/Npp7.8_32bit_PyPadPlusPlus1.2.zip), unzip it into a folder and start `notepad++.exe`.
 
 #### Installation
