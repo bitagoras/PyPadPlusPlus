@@ -161,7 +161,7 @@ class interpreter:
         try:
             object = eval(element, self.interp.locals)
         except:
-            return var, str(0), 'Invalid expression'
+            return var, str(0), 'no value'
         if var in element:
             if line:
                 try:
@@ -244,9 +244,7 @@ class interpreter:
 
     @fromPipe('K')
     def showtraceback(self):
-        """Display the exception that just occurred.
-        The first two stack items are removed because it is
-        not the user code."""
+        """Display the exception that just occurred."""
         try:
             type, value, tb = sys.exc_info()
             sys.last_type = type

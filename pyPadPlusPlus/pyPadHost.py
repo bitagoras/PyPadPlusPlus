@@ -32,7 +32,6 @@ class quantizedChannel:
                 try:
                     ret = self.receiveQueue.get(block=True, timeout=self.timeout)
                 except:
-                    print "timeout", self.commandId
                     return None
             return ret
         else:
