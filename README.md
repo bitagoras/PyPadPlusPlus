@@ -46,7 +46,7 @@ PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is qui
 
 If you need to install PyPadPlusPlus in another version of Notepad++ you have to go the hard way:
 
-1. Install Python Script from https://github.com/bruderstein/PythonScript/releases/.
+1. Install Python Script from https://github.com/bruderstein/PythonScript/releases/ or in the plugin manager of Notepad++.
 2. Download the sources or the latest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) of PyPadPlusPlus and extract the files into the script folder of PythonScript:
   <br>`notepad++\plugins\PythonScript\scripts\` ("machine scripts")
   <br>or `notepad++\plugins\config\PythonScript\scripts\` ("user scripts")
