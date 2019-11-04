@@ -1,27 +1,34 @@
 # PyPadPlusPlus
 ### Addon for Notepad++ and PythonScript for interactive Python development
 
-PyPadPlusPlus is an addon for Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/) to interactivly work with Python. You can run your Python script line by line or in selected blocks or run the entire file. Just go with the cursor somewhere in your code and press `<Shift> + <Enter>`. This will execute the current line or the smallest piece of code the can run individually. By selecting several lines or the whole script (with `<Ctrl> + <A>`) you can execute any part or the whole program. Cells of code can be defined by comments starting with `#%%`. You have always the choice whether you want to execute cells or single lines of code. With the mouse wheel button you can execute any selected code or single lines by one click. The output is shown in a console frame. The console has an undo buffer for every output. By selecting a variable and hovering over it with the mouse you can get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of any variable.
+PyPadPlusPlus is an interactive Python environment based on Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/).
 
-Another little optional feature fits perfectly in the workflow of PyPadPlusPlus and allows you to log small pieces of code you like to remember but you don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. When you figured out something new about Python you can log it as a kind of "Python diary". Some month later with a déjà vu at the same problem you have a look in the code-snippets log file. You can run it directly from this file where every log entry is a code cell.
+It's concept is to fuse the interactive Python shell and the editor to one single tool. This frees you from having to copy code from the editor to the interactive shell and back, depending on whether you want to work interactivly with that piece of code or conserve it permanently in your algorithm.
+
+The editor acts as an interactiv shell. To execute one line or a piece of code press `<Shift> + <Enter>`. This will run the current line or the smallest piece of code the can run individually. By selecting several lines (or the whole script with `<Ctrl> + <A>`) you can execute any part of your program. Cells of code can be defined by special comments starting with `#%%`. You have always the choice whether you want to execute cells, single lines or code selections. With the mouse wheel button you can execute any line or code piece by one click. The output is shown in an output console frame. The console has an undo buffer for every execution that produced any output.
+
+By selecting a variable and hovering over itwith the mouse or pressing `<Shift> + <Ctrl> + <Space>` you will get a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of any variable.
+
+The editor comes with another little feature that fits perfectly in the workflow of PyPadPlusPlus. It allows you to log small pieces of code you wish to keep but don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. It acts as a kind of "Python diary" for code snippets.
 
   <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/demo/pyPadDemo.gif">  
 
 #### Features
 
-* Run Python code line-by-line
+* Run Python code line-by-line with `<Shift> + <Enter>`
 * Run selected Python code (intelligent selection, no accurate selection is required)
 * Run line or selection with middle mouse button
-* Run cells of python code defined by `#%%` comments
+* Run cells of python code defined by `#%%` comments with `<Shift> + <Enter>`
 * A color marker highlights last executed lines
 * Animated color marker for active lines
+* Calltip popup for object inspection of selected items and mouse hover or `<Shift> + <Ctrl> + <Space>`
+* Calltip with size information of numpy arrays
+* Evaluate variables or any selected expression, even some code is running
 * Code auto completion for run-time defined object properties, dictionary keys, function calls
 * Calltip popup for function calls, doc string and module help
-* Evaluate any selected expression while code is running
 * Special popup to switch quickly between `True` and `False`
 * Click on popup to show full string or help text in output console
 * Output console has an undo buffer
-* Object inspection for selected items with mouse hover
 * Internal or external Python distribution
 * Reset and restart Python kernel (e.g. when stuck in endless loop, not available when using the internal Python)
 * Matplotlib event handler to hold multiple active plot windows
@@ -51,6 +58,7 @@ If you need to install PyPadPlusPlus in another version of Notepad++ you have to
     * `pyPadExecuteFix.py` same as pyPadExecute but keeps the cursor at its position
     * `pyPadRestart.py`  restarts the python kernel or cleans the variables
     * `codeSnippetsLog.py`  optional: to store code snippets
+    * `pyPadCalltip.py`     Shows a calltip with the content of the variable below the cursor or the evaluation of the selected expression.
 6. Press OK, restart Notepad++ and go to menu "Settings → Shortcut mapper" and define in the tab "Plugin commands" the shortcuts:
     * `pyPadExecute.py     <Shift> + <Enter>`
     * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
