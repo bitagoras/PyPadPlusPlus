@@ -3,11 +3,11 @@
 
 PyPadPlusPlus is an interactive Python environment based on Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/).
 
-It's concept is to fuse the interactive Python shell and editor to one single tool and unify the advantages of both. You never have to copy code any more from the editor to the interactive shell and back, depending on whether you want to work interactively with the code or keep it permanently in your algorithm. Instead, your editor becomes an interactive workbench where your algorithm is both tried out piece by piece and finally assembled.
+Its unique feature is a fusion of the interactive Python shell with the editor to one unified Python tool. You never have to copy code from the editor to the interactive shell and back again, depending on whether you want to work interactively with the code or keep it permanently in your algorithm. Instead, your editor becomes an interactive workbench on which your algorithm is both tried out in small parts and finally assembled.
 
-To execute one line or a piece of code press `<Shift> + <Enter>`. This will run the current line or the smallest piece of code that can run individually. By selecting several lines (or the whole script with `<Ctrl> + <A>`) you can execute any part of your program. Cells of code can be defined by special comments starting with `#%%`. You have always the choice whether you want to execute cells, single lines or code selections. With the mouse wheel button you can execute any line or piece code by one click. The output is shown in an output console frame. The console has also an undo buffer for every execution that has produced some output.
+To execute one line or a piece of code press `<Shift> + <Enter>`. This executes the current line or the smallest number of lines belonging to the selection without having to precisely select complete lines. The whole script can be executed with the selection by `<Ctrl> + <A>`. Cells of code can be defined by special comments starting with `#%%`. You have always the choice whether you want to execute cells, single lines or code selections. With the mouse wheel button you can execute any line or piece of code by one click. The output is shown in an output console frame. The console has an undo buffer for every execution that produced some output.
 
-By selecting a variable and hovering over it with the mouse or pressing `<Shift> + <Ctrl> + <Space>` will show a calltip with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of a variable.
+By selecting a variable and hovering over it with the mouse or pressing `<Shift> + <Ctrl> + <Space>` will show a popup with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of a variable.
 
 The editor comes with another little feature that fits perfectly in the workflow of PyPadPlusPlus. It allows you to log small pieces of code you wish to keep but don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. It acts as a kind of "Python diary" for code snippets.
 
@@ -21,17 +21,17 @@ The editor comes with another little feature that fits perfectly in the workflow
 * Run cells of python code defined by `#%%` comments with `<Shift> + <Enter>`
 * A color marker highlights last executed lines
 * Animated color marker for active lines
-* Calltip popup for object inspection of selected items and mouse hover or `<Shift> + <Ctrl> + <Space>`
-* Calltip with size information of numpy arrays
-* Evaluate variables or any selected expression, even some code is running
+* Tooltip for object inspection of selected items and mouse hover or `<Shift> + <Ctrl> + <Space>`
+* Tooltip with size information about numpy arrays
+* Evaluate variables or any selected expression, even if some code is still running
 * Code auto completion for run-time defined object properties, dictionary keys, function calls
-* Calltip popup for function calls, doc string and module help
-* Special popup to switch quickly between `True` and `False`
-* Click on popup to show full string or help text in output console
-* Output console has an undo buffer
+* Calltip for function calls, doc string and module help
+* Special Tooltip to switch quickly between `True` and `False`
+* Click on any Tooltip to show full string or help text in output console
+* Output console has an undo buffer (click inside and press `<Ctrl> + <z>`)
 * Internal or external Python distribution
-* Take controll over Notepad++ with the Python module Npp provided by PythonScript (only available when using the internal Python)
-* Reset and restart Python kernel (e.g. when stuck in endless loop, only available when using an external Python)
+* Take controll over Notepad++ with the Npp module provided by PythonScript (only available when using the internal Python. Load with `import Npp`)
+* Reset and restart Python kernel with `<Alt> + <R>`, e.g. when stuck in endless loop. (only available when using an external Python)
 * Matplotlib event handler to hold multiple active plot windows
 
 #### Roadmap
