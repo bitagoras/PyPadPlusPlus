@@ -412,15 +412,16 @@ class pyPad:
             isIndent = isCodeLine and (line.startswith(' ') or line.startswith('\t'))
             requireMoreLine = isIndent or line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:')
-            satisfied = not requireMoreLine and not expectMoreLines and isCodeLine
-            satisfied = satisfied or (not requireMoreLine and not isCodeLine and not expectMoreLines)
+            expectMoreLines = expectMoreLines or requireMoreLine
+            satisfied = isCodeLine and not (requireMoreLine or expectMoreLines)
+            satisfied = satisfied or not (requireMoreLine or isCodeLine or expectMoreLines)
             if isDecorator:
                 satisfied = False
             if satisfied:
                 break
             if isCodeLine:
                 iFirstCodeLine = iLine
-                if not isIndent:
+                if not (requireMoreLine or isIndent):
                     expectMoreLines = False
                     satisfied = True
             iLine -= 1
