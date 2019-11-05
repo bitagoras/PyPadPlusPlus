@@ -161,7 +161,7 @@ class interpreter:
         try:
             object = eval(element, self.interp.locals)
         except:
-            return var, str(0), 'no value'
+            return var, str(0), 'value error'
         if var in element:
             if line:
                 try:

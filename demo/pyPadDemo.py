@@ -131,6 +131,18 @@ print('2.' + ((' Second long multi line output.'*3)+'\n')*3)
 print('3.' + ((' Third long multi line output.'*3)+'\n')*3)
 
 
+#%% PythonScript
+
+# This feature is only available when the internal Python
+# version is used.
+
+# Interact with Notepad++ via the PythonScript library
+
+import Npp
+i = Npp.editor.getText().find('PythonScript lib')
+editor.callTipShow(i, 'Great library!!!')
+
+
 #%% Matplotlib
 
 # When an external Python kernel is used that has matplotlib installed,
@@ -157,4 +169,6 @@ for i in range(n):
     y = (1 - 0.9*t/n) * (numpy.sin(3.008*2*numpy.pi*t) + numpy.sin(1.5*numpy.pi*(t+r1)))
     plt.plot(x, y, color=plt.cm.plasma(float(i)/n), alpha=0.9, lw=0.8)
 plt.show()
+
+
 

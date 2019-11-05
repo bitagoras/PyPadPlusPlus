@@ -30,7 +30,8 @@ The editor comes with another little feature that fits perfectly in the workflow
 * Click on popup to show full string or help text in output console
 * Output console has an undo buffer
 * Internal or external Python distribution
-* Reset and restart Python kernel (e.g. when stuck in endless loop, not available when using the internal Python)
+* Take controll over Notepad++ with the Python module Npp provided by PythonScript (only available when using the internal Python)
+* Reset and restart Python kernel (e.g. when stuck in endless loop, only available when using an external Python)
 * Matplotlib event handler to hold multiple active plot windows
 
 #### Roadmap
