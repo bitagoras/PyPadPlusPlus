@@ -48,7 +48,7 @@ class PseudoFileOut:
         self.write = write
     def write(self, s): pass
 
-class pyPad:
+class pyPadPlusPlus:
     def __init__(self, externalPython=None, matplotlib_eventHandler=True, cellHighlight=True,
             popupForUnselectedVariable=True, popupForSelectedExpression=False,
             mouseDwellTime=200):
@@ -617,20 +617,20 @@ class pyPad:
         of a selected variable'''
         #if self.bufferActive or self.interp.active(): return
         #if editor.callTipActive(): return
-        p = editor.positionFromPoint(args['x'], args['y'])
-        self.showCalltip(p)
+        pos = editor.positionFromPoint(args['x'], args['y'])
+        self.showCalltip(pos)
 
-    def showCalltip(self, p=None):
+    def showCalltip(self, pos=None):
         iStart = editor.getSelectionStart()
         iEnd = editor.getSelectionEnd()
-        if p is None:
-            p = editor.getCurrentPos()
+        if pos is None:
+            pos = editor.getCurrentPos()
             CT_unselected = True
             CT_expression = True
         else:
             CT_unselected = self.popupForUnselectedVariable
             CT_expression = self.popupForSelectedExpression
-        if iEnd != iStart and iStart <= p <= iEnd:
+        if iEnd != iStart and iStart <= pos <= iEnd:
             if CT_expression and iEnd - iStart > 1:
                 expression = editor.getTextRange(iStart, iEnd)
                 if expression =='False':
@@ -640,12 +640,13 @@ class pyPad:
                     self.activeCalltip = True
                     editor.callTipShow(iStart, 'set to False')
                 elif not '\n' in expression:
-                    ret = self.interp.getCallTip(None, expression)
-                    if ret:
-                        element, nHighlight, calltip = ret
-                        self.activeCalltip = 'doc'
-                        editor.callTipShow(iStart, ''.join(calltip))
-                        editor.callTipSetHlt(0, int(nHighlight))
+                    if CT_unselected and CT_expression or expression != 'value error':
+                        ret = self.interp.getCallTip(None, expression)
+                        if ret:
+                            element, nHighlight, calltip = ret
+                            self.activeCalltip = 'doc'
+                            editor.callTipShow(iStart, ''.join(calltip))
+                            editor.callTipSetHlt(0, int(nHighlight))
             else:
                 iLineStart = editor.positionFromLine(editor.lineFromPosition(iStart))
                 var = editor.getTextRange(iStart, iEnd)
@@ -673,11 +674,11 @@ class pyPad:
                             self.activeCalltip = 'doc'
                             editor.callTipShow(iStart, ''.join(calltip))
                             editor.callTipSetHlt(0, int(nHighlight))
-        elif CT_unselected and iStart == iEnd and p >= 0:
-            iLine = editor.lineFromPosition(p)
+        elif CT_unselected and iStart == iEnd and pos >= 0:
+            iLine = editor.lineFromPosition(pos)
             line = editor.getLine(iLine)
             iLineStart = editor.positionFromLine(iLine)
-            posInLine = p - iLineStart
+            posInLine = pos - iLineStart
             iWordEnd=0
             for iWordStart in range(posInLine, -1, -1):
                 s = line[iWordStart]
@@ -697,9 +698,10 @@ class pyPad:
                 pos = iLineStart + iWordStart
                 if ret:
                     element, nHighlight, calltip = ret
-                    self.activeCalltip = 'doc'
-                    editor.callTipShow(pos, ''.join(calltip))
-                    editor.callTipSetHlt(0, int(nHighlight))
+                    if calltip != 'value error':
+                        self.activeCalltip = 'doc'
+                        editor.callTipShow(pos, ''.join(calltip))
+                        editor.callTipSetHlt(0, int(nHighlight))
 
 
     def onCalltipClick(self, args):

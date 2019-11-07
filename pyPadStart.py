@@ -44,8 +44,8 @@ popupForSelectedExpression = False
 # are allways active for the defined keyboard shortcut to script pyPadCalltip.py.
 
 # Start pyPadPlusPlus
-import Npp, pyPadPlusPlus
-Npp.pypad = pyPadPlusPlus.pyPad(
+import Npp, pyPad
+Npp.pypad = pyPad.pyPadPlusPlus(
         externalPython=pythonPath,
         matplotlib_eventHandler=matplotlib_eventHandler,
         cellHighlight=cellHighlight,
