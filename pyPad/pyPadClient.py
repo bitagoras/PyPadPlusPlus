@@ -117,10 +117,10 @@ class interpreter:
             object = eval(self.code, self.interp.locals)
             if object is not None:
                 result = repr(object)
+                if not self.buffer.empty():
+                    result = ''.join([i for e,i in self.buffer.read() if not e]) + result
             else:
-                result = ''
-            if not self.buffer.empty():
-                result = ''.join([i for e,i in self.buffer.read() if not e]) + result
+                result = None
             err = False
         except:
             err = True
