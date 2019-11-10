@@ -637,13 +637,12 @@ class pyPadPlusPlus:
                     self.activeCalltip = True
                     editor.callTipShow(iStart, 'set to False')
                 elif not '\n' in expression:
-                    if CT_unselected and CT_expression or expression != 'value error':
-                        ret = self.interp.getCallTip(None, expression)
-                        if ret:
-                            element, nHighlight, calltip = ret
-                            self.activeCalltip = 'doc'
-                            editor.callTipShow(iStart, ''.join(calltip))
-                            editor.callTipSetHlt(0, int(nHighlight))
+                    ret = self.interp.getCallTip(None, expression)
+                    if ret and (CT_unselected or ret[-1] != 'value error'):
+                        element, nHighlight, calltip = ret
+                        self.activeCalltip = 'doc'
+                        editor.callTipShow(iStart, ''.join(calltip))
+                        editor.callTipSetHlt(0, int(nHighlight))
             else:
                 iLineStart = editor.positionFromLine(editor.lineFromPosition(iStart))
                 var = editor.getTextRange(iStart, iEnd)
@@ -667,7 +666,7 @@ class pyPadPlusPlus:
                         elif element == var =='True':
                             self.activeCalltip = True
                             editor.callTipShow(iStart, 'set to False')
-                        else:
+                        elif ret[-1] != 'value error':
                             self.activeCalltip = 'doc'
                             editor.callTipShow(iStart, ''.join(calltip))
                             editor.callTipSetHlt(0, int(nHighlight))
