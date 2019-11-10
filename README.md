@@ -18,18 +18,20 @@ The editor comes with another little feature that fits perfectly in the workflow
 * Run Python code line-by-line with `<Shift> + <Enter>`
 * Run selected Python code (intelligent selection, no accurate selection is required)
 * Run line or selection with middle mouse button
+* Run line or selection multiple times while cursor does not propagate (`<Shift> + <Ctrl> + <Enter>`)
 * Run cells of python code defined by `#%%` comments with `<Shift> + <Enter>`
 * A color marker highlights last executed lines
 * Animated color marker for active lines
-* Tooltip for object inspection of selected items and mouse hover or `<Shift> + <Ctrl> + <Space>`
-* Tooltip with size information about numpy arrays
-* Evaluate variables or any selected expression, even if some code is still running
+* Tooltip for run-time variable and object inspection of selected items and mouse hover or `<Shift> + <Ctrl> + <Space>`
+* Special Tooltip with size and shape information of numpy arrays
+* Evaluate variables or any selected expression (e.g. with `<Shift> + <Ctrl> + <Space>`), even if some code is still running
 * Code auto completion for run-time defined object properties, dictionary keys, function calls
 * Calltip for function calls, doc string and module help
 * Special Tooltip to switch quickly between `True` and `False`
 * Click on any Tooltip to show full string or help text in output console
 * Output console has an undo buffer (click inside and press `<Ctrl> + <z>`)
-* Internal or external Python distribution
+* Clear output console with `<Shift> + <Ctrl> + <C>`.
+* Internal or external Python distribution can be used, including Python 3 kernels.
 * Take controll over Notepad++ with the Npp module provided by PythonScript (only available when using the internal Python. Load with `import Npp`)
 * Reset and restart Python kernel with `<Alt> + <R>`, e.g. when stuck in endless loop. (only available when using an external Python)
 * Matplotlib event handler to hold multiple active plot windows
