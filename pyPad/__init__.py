@@ -318,11 +318,17 @@ class pyPadPlusPlus:
                         err, requireMore, isValue = res
                 else: err, requireMore, isValue = None, True, False
                 if requireMore:
-                    iCodeLineStart, iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd, -1)
-                    if iEnd == -1:
-                        iLineEnd = iLineStart
-                        break
-
+                    nextLine = next(getLineEnd, None)
+                    if nextLine is None:
+                        self.bufferActive = 0
+                        iEnd = editor.getLength()
+                        block = editor.getTextRange(iStart, iEnd).rstrip()
+                        err, buff = self.interp.execute(block,iLineStart,filename)
+                        self.outBuffer(buff)
+                        self.setMarkers(iLineStart, iLineEnd, block, iMarker=self.m_error, bufferID=bufferID)
+                        return
+                    iCodeLineStart, iLineEnd, isEmpty, expectMoreLinesBefore = nextLine
+                        
         if onlyInsideCodeLines and not selection and not iLineStart <= iLineCursor <= iLineEnd:
             self.hideMarkers()
             self.bufferActive = 0

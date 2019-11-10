@@ -167,7 +167,7 @@ class interpreter:
     def evaluate(self): pass
 
     @toPipe('D', timeout=None)
-    def execute(self, string=None): pass
+    def execute(self, string=None, iLineStart=None, filename=None): pass
 
     @toPipe('E')
     def maxCallTip(self, value): pass

@@ -129,9 +129,11 @@ class interpreter:
         return err, result
 
     @fromPipe('D')
-    def execute(self, string=None):
+    def execute(self, string=None, iLineStart=None, filename=None):
         try:
-            if type(string) is str:
+            if filename is not None:
+                exec(compile('\n' * iLineStart + string + '\n',filename,'exec'))
+            elif type(string) is str:
                 # for non-user commands
                 exec(string, globals())
             else:
