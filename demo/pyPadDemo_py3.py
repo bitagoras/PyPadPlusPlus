@@ -139,7 +139,7 @@ print('3.' + ((' Third long multi line output.'*3)+'\n')*3)
 
 import Npp
 i = Npp.editor.getText().find('PythonScript lib')
-editor.callTipShow(i, 'Great library!!!')
+Npp.editor.callTipShow(i, 'Great library!!!')
 
 
 #%% Matplotlib
