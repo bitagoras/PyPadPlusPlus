@@ -30,6 +30,7 @@ The editor comes with another little feature that fits perfectly in the workflow
 * Special Tooltip to switch quickly between `True` and `False`
 * Click on any Tooltip to show full string or help text in output console
 * Output console has an undo buffer (click inside and press `<Ctrl> + <z>`)
+* Clear output console with `<Shift> + <Ctrl> + <C>`.
 * Internal or external Python distribution can be used, including Python 3 kernels.
 * Take controll over Notepad++ with the Npp module provided by PythonScript (only available when using the internal Python. Load with `import Npp`)
 * Reset and restart Python kernel with `<Alt> + <R>`, e.g. when stuck in endless loop. (only available when using an external Python)
