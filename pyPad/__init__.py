@@ -602,19 +602,10 @@ class pyPadPlusPlus:
         console.editor.beginUndoAction()
         out = []
         mode = True
-        collect = []
-        collectErr = None
         for err, line in buffer:
-            collect.append(line)
-            if collectErr is None:
-                collectErr = err
-            if collectErr != err:
-                if collectErr: console.writeError(''.join(collect))
-                else: console.write(''.join(collect))
-                collectErr = err
-                collect = []
-        if collectErr: console.writeError(''.join(collect))
-        else: console.write(''.join(collect))
+            if err:
+                console.writeError(line)
+            else: console.write(line)
         console.editor.endUndoAction()
         console.editor.setReadOnly(0)
 
