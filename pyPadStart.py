@@ -11,6 +11,11 @@
 #
 pythonPath = None
 
+# In case of problems with certain libraries (e.g. numpy, matplotlib, Qt) set
+# the required environment variables of your Python distribution manually by:
+# import os
+# os.environ['PATH'] = 
+
 # To use multiple interactive matplotlib windows, pyPadPlusPlus
 # runs an internal matplotlib event handler during idle time.
 # If this cases any problems, set it to False.
