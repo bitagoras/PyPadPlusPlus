@@ -2,9 +2,9 @@
 # requires the Python Script plugin.
 
 __author__ = "Christian Schirm"
-__copyright__ = "Copyright 2018"
+__copyright__ = "Copyright 2019"
 __license__ = "GPLv3"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 import Npp
 from Npp import editor, console, notepad
