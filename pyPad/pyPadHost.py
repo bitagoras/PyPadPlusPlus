@@ -147,7 +147,7 @@ class interpreter:
             if self.kernelAlive.isSet(): self.proc.stdin.flush()
 
             try:
-                answers = eval(self.proc.stdout.readline())
+                answers = eval(unicode(self.proc.stdout.readline(),'latin1').encode('utf-8'))
             except:
                 continue
 

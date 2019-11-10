@@ -91,6 +91,10 @@ class interpreter:
         isValue = False
         requireMore = False
         try:
+            block = block.encode('latin1').decode('utf8')
+        except:
+            pass
+        try:
             code = compile_command('\n' * iLineStart + block, filename, 'eval')
             isValue = True
         except (OverflowError, SyntaxError, ValueError):
