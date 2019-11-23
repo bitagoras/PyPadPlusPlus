@@ -273,14 +273,14 @@ class pyPadPlusPlus:
         err = None
         if not cellMode:
             getLineEnd = self.completeBlockEnd(iLineStart, iLineMin=iLineEnd, iLineMax=editor.getLineCount()-1)
-            iFirstCodeLine, iLineEnd, isEmpty, expectMoreLinesBefore = next(getLineEnd)
-            if not expectMoreLinesBefore and iFirstCodeLine:
+            iFirstCodeLine, iLineEnd, isEmpty, inspectLineBefore = next(getLineEnd)
+            if not inspectLineBefore and iFirstCodeLine:
                 iLineStart = iFirstCodeLine
             if isEmpty:
                 self.hideMarkers(bufferID)
                 self.bufferActive = 0
                 return
-            iLineStart = self.completeBlockStart(iLineStart, expectMoreLinesBefore)
+            iLineStart = self.completeBlockStart(iLineStart, inspectLineBefore)
 
             requireMore = True
 
@@ -327,7 +327,7 @@ class pyPadPlusPlus:
                         self.outBuffer(buff)
                         self.setMarkers(iLineStart, iLineEnd, block, iMarker=self.m_error, bufferID=bufferID)
                         return
-                    iCodeLineStart, iLineEnd, isEmpty, expectMoreLinesBefore = nextLine
+                    iCodeLineStart, iLineEnd, isEmpty, inspectLineBefore = nextLine
                         
         if onlyInsideCodeLines and not selection and not iLineStart <= iLineCursor <= iLineEnd:
             self.hideMarkers()
@@ -403,7 +403,7 @@ class pyPadPlusPlus:
         linePart = editor.getTextRange(iStart, iPos - 1)
         return linePart
 
-    def completeBlockStart(self, iLine, expectMoreLines):
+    def completeBlockStart(self, iLine, inspectLineBefore):
         '''Add preceding lines that are required to execute
         the selected code, e.g. the beginning of an indented
         code block.'''
@@ -416,54 +416,61 @@ class pyPadPlusPlus:
             if satisfied and not isDecorator:
                 break
             isIndent = isCodeLine and (line.startswith(' ') or line.startswith('\t'))
-            requireMoreLine = isIndent or line.startswith('else:') or line.startswith('elif') \
+            requireLineBefore = isIndent or line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:')
-            expectMoreLines = expectMoreLines or requireMoreLine
-            satisfied = isCodeLine and not (requireMoreLine or expectMoreLines)
-            satisfied = satisfied or not (requireMoreLine or isCodeLine or expectMoreLines)
+            inspectLineBefore = line.startswith('def ') or inspectLineBefore or requireLineBefore 
+            satisfied = isCodeLine and not (requireLineBefore or inspectLineBefore)
+            satisfied = satisfied or not (requireLineBefore or isCodeLine or inspectLineBefore)
             if isDecorator:
                 satisfied = False
             if satisfied:
                 break
             if isCodeLine:
                 iFirstCodeLine = iLine
-                if not (requireMoreLine or isIndent):
-                    expectMoreLines = False
+                if not (requireLineBefore or isIndent):
+                    inspectLineBefore = False
                     satisfied = True
             iLine -= 1
         return max(0, iFirstCodeLine)
 
-    def completeBlockEnd(self, iLine, iLineMin, iLineMax, isEmpty=True, expectMoreLinesBefore=False):
+    def completeBlockEnd(self, iLine, iLineMin, iLineMax, isEmpty=True, inspectLineBefore=False):
         '''Add following lines that are required to execute
         the selected code, without leaving code that cannot
         be executed seperately in the next step.'''
         iLastCodeLine = iLine
         iFirstCodeLine = None
-        inspectMoreLines = False
-        nextLineIsRequired = False
+        inspectLineAfter = False
+        isFfirstCodeLine = True
         while iLine <= iLineMax:
-            thisLineIsRequired = nextLineIsRequired
             line = editor.getLine(iLine).rstrip()
             isCodeLine = len(line) > 0 and not line.lstrip().startswith('#')
             isIndent = isCodeLine and (line.startswith(' ') or line.startswith('\t'))
-            nextLineIsRequired = line.startswith('else:') or line.startswith('elif') \
-                    or line.startswith('except:') or line.startswith('finally:')
-            if nextLineIsRequired or isIndent: inspectMoreLines = True
-            if isEmpty and isIndent: expectMoreLinesBefore = True
-            if isCodeLine: isEmpty = False
-            if isCodeLine and not nextLineIsRequired: inspectMoreLines = False
+            thisLineIsRequiredAndMaybeMore = line.startswith('elif') or line.startswith('except:')
+            thisLineIsRequired = line.startswith('else:') or line.startswith('finally:') \
+                    or thisLineIsRequiredAndMaybeMore
+            mightRequireLineAfter = (thisLineIsRequiredAndMaybeMore or isFfirstCodeLine and \
+                (line.startswith('if ') or line.startswith('for ') or line.startswith('while '))) \
+                and not inspectLineAfter
+            if thisLineIsRequired or isIndent or mightRequireLineAfter:
+                inspectLineAfter = True
+            if thisLineIsRequired: isCodeLine = True
+            if isEmpty and isIndent: inspectLineBefore = True
             if isCodeLine:
+                isEmpty = False
+                if not thisLineIsRequired and not mightRequireLineAfter:
+                    inspectLineAfter = False
                 if iFirstCodeLine is None:
                     iFirstCodeLine = iLine
                 if thisLineIsRequired or iLine <= iLineMin:
                     iLastCodeLine = iLine
-            satisfied = not isIndent and isCodeLine and not inspectMoreLines and not nextLineIsRequired
+            satisfied = not isIndent and isCodeLine and not inspectLineAfter
             if iLine >= iLineMin and satisfied:
-                yield iFirstCodeLine, iLastCodeLine, isEmpty, expectMoreLinesBefore
+                yield iFirstCodeLine, iLastCodeLine, isEmpty, inspectLineBefore
             if isCodeLine:
                 iLastCodeLine = iLine
+                isFfirstCodeLine = False
             iLine += 1
-        yield iFirstCodeLine, iLastCodeLine, isEmpty, expectMoreLinesBefore
+        yield iFirstCodeLine, iLastCodeLine, isEmpty, inspectLineBefore
 
     def preCalculateMarkers(self):
         if self.specialMarkers is None:
