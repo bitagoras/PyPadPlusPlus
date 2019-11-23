@@ -3,13 +3,13 @@
 
 PyPadPlusPlus is an interactive Python environment based on Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/).
 
-Its unique feature is a fusion of the interactive Python shell with the editor to one unified Python tool. You never have to copy code from the editor to the interactive shell and back again, depending on whether you want to work interactively with the code or keep it permanently in your algorithm. Instead, your editor becomes an interactive workbench on which your algorithm is both tried out in small parts and finally assembled.
+Its special property is a fusion of the interactive Python shell with the editor to one single tool. This means that the editor can be used for both interactive testing of code and storing the commands permanently as part of your algorithm. So, you never have to copy code lines again from the editor to the shell or back. The output appears in a second frame, which is an output-only area, while the editor is an input-only area.
 
-To execute one line or a piece of code press `<Shift> + <Enter>`. This executes the current line or the smallest number of lines belonging to the selection without having to precisely select complete lines. The whole script can be executed with the selection by `<Ctrl> + <A>`. Cells of code can be defined by special comments starting with `#%%`. You have always the choice whether you want to execute cells, single lines or code selections. With the mouse wheel button you can execute any line or piece of code by one click. The output is shown in an output console frame. The console has an undo buffer for every execution that produced some output.
+To execute one line or a piece of code press `<Shift> + <Enter>`. This executes the current line or the smallest number of lines belonging syntatically to the selection. No precise selection is required in order to execute valid parts of the code. The whole script can be executed with the selection of all by `<Ctrl> + <A>`. Cells of code can be optionally defined by special comments starting with `#%%`. In any case you have the choice whether you want to execute cells, single lines or code selections. With the mouse wheel button you can execute any line or piece of code by one click. The output is shown in an output console frame. The console has an undo buffer for every execution that produced some output.
 
-By selecting a variable and hovering over it with the mouse or pressing `<Shift> + <Ctrl> + <Space>` will show a popup with information about it's current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of a variable.
+By selecting a variable and hovering over it with the mouse or pressing `<Shift> + <Ctrl> + <Space>` will show a popup with information about its current type and value. Autocompletion lists for objects and dictionaries allows you to explore the current run-time information of a variable.
 
-The editor comes with another little feature that fits perfectly in the workflow of PyPadPlusPlus. It allows you to log small pieces of code you wish to keep but don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. It acts as a kind of "Python diary" for code snippets.
+The extension comes with another little feature that fits perfectly in the workflow of PyPadPlusPlus. It allows you to log small pieces of code you wish to keep but don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. It acts as a kind of "Python diary" for code snippets.
 
   <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/demo/pyPadDemo.gif">  
 
@@ -42,8 +42,8 @@ Planned feature:
 
 #### Download
 
-PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is quite cumbersome you can download the newest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) ready-to-play in a bundle with Notepad++ v7.8 and PythonScript v1.5.2.0 as portable version:
-* Download [`Npp7.8_32bit_PyPadPlusPlus1.2.1.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/1.2.1/Npp7.8_32bit_PyPadPlusPlus1.2.1.zip), unzip it into a folder and start `notepad++.exe`.
+PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is quite cumbersome you can download the [latest release](https://github.com/bitagoras/PyPadPlusPlus/releases/latest) ready-to-play in a bundle with Notepad++ v7.8 and PythonScript v1.5.2.0 as portable version:
+* Download [`Npp7.8_32bit_PyPadPlusPlus1.2.1.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.2.1/Npp7.8_32bit_PyPadPlusPlus1.2.1.zip), unzip it into a folder and start `notepad++.exe`.
 
 #### Installation
 
