@@ -440,7 +440,7 @@ class pyPadPlusPlus:
         iLastCodeLine = iLine
         iFirstCodeLine = None
         inspectLineAfter = False
-        isFfirstCodeLine = True
+        isFirstCodeLine = True
         while iLine <= iLineMax:
             line = editor.getLine(iLine).rstrip()
             isCodeLine = len(line) > 0 and not line.lstrip().startswith('#')
@@ -448,9 +448,9 @@ class pyPadPlusPlus:
             thisLineIsRequiredAndMaybeMore = line.startswith('elif') or line.startswith('except:')
             thisLineIsRequired = line.startswith('else:') or line.startswith('finally:') \
                     or thisLineIsRequiredAndMaybeMore
-            mightRequireLineAfter = (thisLineIsRequiredAndMaybeMore or isFfirstCodeLine and \
-                (line.startswith('if ') or line.startswith('for ') or line.startswith('while '))) \
-                and not inspectLineAfter
+            mightRequireLineAfter = (thisLineIsRequiredAndMaybeMore or isFirstCodeLine and \
+                (line.startswith('if ') or line.startswith('for ') or line.startswith('while ')
+                    )) and not inspectLineAfter
             if thisLineIsRequired or isIndent or mightRequireLineAfter:
                 inspectLineAfter = True
             if thisLineIsRequired: isCodeLine = True
@@ -463,12 +463,14 @@ class pyPadPlusPlus:
                     iFirstCodeLine = iLine
                 if thisLineIsRequired or iLine <= iLineMin:
                     iLastCodeLine = iLine
+            if isCodeLine and line.endswith('\\'):
+                inspectLineAfter = True
             satisfied = not isIndent and isCodeLine and not inspectLineAfter
             if iLine >= iLineMin and satisfied:
                 yield iFirstCodeLine, iLastCodeLine, isEmpty, inspectLineBefore
             if isCodeLine:
                 iLastCodeLine = iLine
-                isFfirstCodeLine = False
+                isFirstCodeLine = False
             iLine += 1
         yield iFirstCodeLine, iLastCodeLine, isEmpty, inspectLineBefore
 

@@ -50,6 +50,11 @@ finally:
 
 if True: 1
 
+a = 3
+b = 6 \
+    + 3
+c = 4
+
 def test(x):
     pass
 
@@ -59,3 +64,14 @@ def test2():
     pass
 
 numbers = list(map(int, numbers.split(',')) # EOF error!
+
+
+
+
+
+
+
+
+
+
+
