@@ -9,6 +9,7 @@ __version__ = "1.2.1"
 import Npp
 from Npp import editor, console, notepad
 import code, sys, time, os
+PY3 = sys.version_info[0] >= 3
 from codeop import compile_command
 #import introspect  # Module for code introspection from the wxPython project
 import traceback
@@ -487,6 +488,12 @@ class pyPadPlusPlus:
             self.markerHeight = len(fade)
 
             # pre-calculate animated "active" marker
+            if PY3:
+                def char(x): return b'%c'%x
+                def join(x): return b''.join(x)
+            else:
+                def char(x): return chr(x)
+                def join(x): return ''.join(x)
             animation = []
             for iCycle in range(10):
                 n = len(fade)
@@ -498,24 +505,24 @@ class pyPadPlusPlus:
                 for iFade,f in enumerate(fade):
                     x = min(0, -(iFade - nh))
                     a = sin(pi*(4*(x / float(n))**2 - iCycle / 10.))**2
-                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]]) + chr(f)
+                    rgb = join([char(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]]) + char(f)
                     rgba.append(rgb*self.markerWidth)
                     x = -min(0, (iFade - nh))
                     a = sin(pi*(4*(x / float(n))**2 + iCycle / 10.))**2
-                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]])  + chr(fade[n-1-iFade])
+                    rgb = join([char(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]])  + char(fade[n-1-iFade])
                     rgba_r.append(rgb*self.markerWidth)
                 rgb = tuple([(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]])
-                rgba = ''.join(rgba)
-                rgba_r = ''.join(rgba_r)
+                rgba = join(rgba)
+                rgba_r = join(rgba_r)
                 animation.append((rgb, rgba, rgba_r))
             self.specialMarkers[self.m_active] = animation
 
             # pre-calculate marker for "finish" and "error".
             for iMarker, c in ((self.m_finish, (255,220,0)),
                     (self.m_error, (255,100,100))):
-                rgb = chr(c[0])+chr(c[1])+chr(c[2])
-                rgba = ''.join([(rgb+chr(f))*self.markerWidth for f in fade])
-                rgba_r = ''.join([(rgb+chr(f))*self.markerWidth for f in reversed(fade)])
+                rgb = char(c[0])+char(c[1])+char(c[2])
+                rgba = join([(rgb+char(f))*self.markerWidth for f in fade])
+                rgba_r = join([(rgb+char(f))*self.markerWidth for f in reversed(fade)])
                 rgb = c
                 self.specialMarkers[iMarker] = rgb, rgba, rgba_r
 
