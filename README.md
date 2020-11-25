@@ -49,11 +49,11 @@ PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is qui
 
 If you need to install PyPadPlusPlus in another version of Notepad++ you have to go the hard way:
 
-1. Install Python Script from https://github.com/bruderstein/PythonScript/releases/ or in the plugin manager of Notepad++.
-2. Download the sources or the latest [release](https://github.com/bitagoras/PyPadPlusPlus/releases) of PyPadPlusPlus and extract the files into the script folder of PythonScript:
+1. Install Python Script from [PythonScript releases](https://github.com/bruderstein/PythonScript/releases) or from the plugin manager of Notepad++.
+2. Download the sources or the latest [PyPadPlusPlus release](https://github.com/bitagoras/PyPadPlusPlus/releases) and extract the files into the script folder of PythonScript:
   <br>`notepad++\plugins\PythonScript\scripts\` ("machine scripts")
   <br>or `notepad++\plugins\config\PythonScript\scripts\` ("user scripts")
-3. Open the file `pyPadStart.py` and set `pythonPath` to the path of your pythonw.exe file.
+3. If you want to use the Python installation of your system, open the file `pyPadStart.py` and set the variable `pythonPath` to the path that contains your `pythonw.exe` file.
 4. Start Notepad++ and go to the menu "Plugins → Python Script → Configuration..."
 5. Select "Machine Scripts" (or "User Scripts") and add the scripts to Menu items:
     * `pyPadClear.py` clears the console output
@@ -73,5 +73,3 @@ If you need to install PyPadPlusPlus in another version of Notepad++ you have to
 7. When Notepad++ does not allow you to define a shortcut on `<Shift> + <Enter>`, use `<Shift> + <Alt> + <Enter>` as preliminary shortcut. Then go to "Settings / Shortcut mapper / Scintilla commands" and unset `<Shift> + <Enter>` for `SCI_NEWLINE`. Now open `shortcuts.xml` in the Notepad++ Folder. Check if there is a line `<ScintKey ScintID="2329" menuCmdID="0" Ctrl="no" Alt="no" Shift="no" Key="13" />`. If not try to find it in the `C:\Users\<user name>\AppData\Roaming\Notepad++\` or  `C:\Users\<user name>\AppData\Local\Notepad++\` folder when Notepad++ was installed with the installer. Now search the line
     * `<PluginCommand moduleName="PythonScript.dll" internalID="8" Ctrl="no" Alt="yes" Shift="yes" Key="13" />`
     * The `internalID` can differ from yours. Then change the `Alt="yes"` into `Alt="no"`. 
-8. If you want to use the Python installation of your system, open the file 
-  `notepad++\plugins\PythonScript\scripts\` and set the variable `pythonPath` to the path that contains `pythonw.exe`.

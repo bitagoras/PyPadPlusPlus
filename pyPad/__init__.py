@@ -14,7 +14,6 @@ from codeop import compile_command
 import traceback
 import threading
 import textwrap
-import pyPadHost#, pyPadRemoteHost
 from math import sin, pi
 
 from ctypes import windll, Structure, c_ulong, byref
@@ -70,10 +69,12 @@ class pyPadPlusPlus:
 
         self.externalPython = bool(externalPython)
         if self.externalPython:
+            from . import pyPadHost
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
+            #from . import pyPadRemoteHost
             #self.interp = pyPadRemoteHost.interpreter(host="127.0.0.5", port=8888, outBuffer=self.outBuffer)
         else:
-            import pyPadClient
+            from . import pyPadClient
             self.interp = pyPadClient.interpreter()
 
         if cellHighlight:
@@ -97,7 +98,7 @@ class pyPadPlusPlus:
         editor.setMarginWidthN(3, self.markerWidth)
         editor.setMarginMaskN(3, (256+128+64) * (1 + 2**3 + 2**6))
         self.markers = {}
-        self.m_active, self.m_error, self.m_finish = [6 + 3*i for i in 0,1,2]
+        self.m_active, self.m_error, self.m_finish = [6 + 3*i for i in [0,1,2]]
         self.preCalculateMarkers()
         for iMarker in self.m_active, self.m_error, self.m_finish:
             self.drawMarker(iMarker)
@@ -497,13 +498,13 @@ class pyPadPlusPlus:
                 for iFade,f in enumerate(fade):
                     x = min(0, -(iFade - nh))
                     a = sin(pi*(4*(x / float(n))**2 - iCycle / 10.))**2
-                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2]) + chr(f)
+                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]]) + chr(f)
                     rgba.append(rgb*self.markerWidth)
                     x = -min(0, (iFade - nh))
                     a = sin(pi*(4*(x / float(n))**2 + iCycle / 10.))**2
-                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])  + chr(fade[n-1-iFade])
+                    rgb = ''.join([chr(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]])  + chr(fade[n-1-iFade])
                     rgba_r.append(rgb*self.markerWidth)
-                rgb = tuple([(int(c1[i]*(1-a)+c2[i]*a)) for i in 0,1,2])
+                rgb = tuple([(int(c1[i]*(1-a)+c2[i]*a)) for i in [0,1,2]])
                 rgba = ''.join(rgba)
                 rgba_r = ''.join(rgba_r)
                 animation.append((rgb, rgba, rgba_r))
@@ -631,8 +632,8 @@ class pyPadPlusPlus:
         iEnd = editor.getSelectionEnd()
         if pos is None:
             pos = editor.getCurrentPos()
-            CT_unselected = True
-            CT_expression = True
+            CT_unselected = False
+            CT_expression = False
         else:
             CT_unselected = self.popupForUnselectedVariable
             CT_expression = self.popupForSelectedExpression

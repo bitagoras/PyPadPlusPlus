@@ -10,7 +10,7 @@ from codeop import compile_command
 import traceback
 import textwrap
 import threading
-import introspect
+from . import introspect
 if PY3:
     import queue
 else:
