@@ -639,8 +639,8 @@ class pyPadPlusPlus:
         iEnd = editor.getSelectionEnd()
         if pos is None:
             pos = editor.getCurrentPos()
-            CT_unselected = False
-            CT_expression = False
+            CT_unselected = True
+            CT_expression = True
         else:
             CT_unselected = self.popupForUnselectedVariable
             CT_expression = self.popupForSelectedExpression
