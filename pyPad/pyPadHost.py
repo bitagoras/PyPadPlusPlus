@@ -2,19 +2,15 @@
 # PyPadPlusPlus: pyPadHost, module to call Python in subprocess
 #
 import os, time
-from Npp import console
-import subprocess, threading, Queue
+import subprocess, threading, queue
 import multiprocessing.queues
-try:
-   import cPickle as pickle
-except:
-   import pickle
+import pickle, base64
 
-queueOut = multiprocessing.queues.Queue(maxsize=5)
+queueOut = multiprocessing.Queue(maxsize=5)
 
 class quantizedChannel:
     def __init__(self, commandId, timeout=1):
-        self.receiveQueue = multiprocessing.queues.Queue(maxsize=1)
+        self.receiveQueue = multiprocessing.Queue(maxsize=1)
         self.timeout = timeout
         self.sendLock = threading.Lock()
         self.commandId = commandId
@@ -26,7 +22,7 @@ class quantizedChannel:
                     try:
                         queueOut.put_nowait((self.commandId, arg))
                     except:
-                        print "Python kernel not responding."
+                        print("Python kernel not responding.")
                         kernelAlive.clear()
                         return None
                 try:
@@ -56,7 +52,7 @@ def toPipe(symbol, timeout=1):
 class interpreter:
     def __init__(self, pythonPath='pythonw', outBuffer=None):
         global kernelAlive
-        self.queueIn = Queue.Queue()
+        self.queueIn = queue.Queue()
         if not pythonPath.endswith('.exe'):
             if pythonPath.strip().endswith('pythonw'):
                 pythonPath = pythonPath.strip() + '.exe'
@@ -66,7 +62,7 @@ class interpreter:
         self.outBuffer = outBuffer
         clientPath = os.path.join(os.path.dirname(__file__), 'pyPadClient.py')
         self.StartCommand = pythonPath + ' -u ' + '"' + clientPath + '"'
-        print "start kernel:", self.StartCommand
+        print("start kernel:", self.StartCommand)
         self.kernelActive = threading.Event()
         self.kernelAlive = kernelAlive = threading.Event()
         self.startNewKernel()
@@ -86,6 +82,13 @@ class interpreter:
         self.buffer = []
         self.kernelAlive.set()
 
+    def send(self, obj): print(obj, file=self.proc.stdin, flush=True)
+    def receive(self): return self.proc.stdout.readline()[:-1]
+    def pack(self, obj): return base64.b64encode(pickle.dumps(obj))
+    def unpack(self, packetObj): return pickle.loads(base64.b64decode(packetObj))
+    def sendObj(self, obj): self.send(self.pack(obj).decode('ascii'))
+    def receiveObj(self): return self.unpack(self.proc.stdout.buffer.readline())
+
     def restartKernel(self):
         self.kernelAlive.clear()
         self.kernelActive.set()
@@ -94,7 +97,7 @@ class interpreter:
         time.sleep(0.1)
         self.startNewKernel()
         self.kernelActive.clear()
-        print "Python kernel restarted."
+        print("Python kernel restarted.")
 
     def __del__(self):
         self.kernelAlive.clear()
@@ -110,7 +113,7 @@ class interpreter:
     def clearQueue(self):
         global queueOut
         queueOut.close()
-        queueOut = multiprocessing.queues.Queue(maxsize=5)
+        queueOut = multiprocessing.Queue(maxsize=5)
         self.queueIn.queue.clear()
         for k,i in receiveChannels.items():
             i.clear()
@@ -136,20 +139,24 @@ class interpreter:
             # write the commandId of the function
             try:
                 # send data
-                self.proc.stdin.write(repr((commandId, dataToPipe))+'\n')
+                #self.proc.stdin.write(repr((commandId, dataToPipe))+'\n')
+                self.sendObj((commandId, dataToPipe))
             except:
                 if self.kernelAlive:
-                    print "Python kernel not responding."
+                    print("Python kernel not responding.")
                     self.kernelAlive.clear()
                 continue
 
             # flush channel for immidiate transfer
-            if self.kernelAlive.isSet(): self.proc.stdin.flush()
+            #if self.kernelAlive.isSet():
+            #    self.proc.stdin.flush()
 
-            try:
-                answers = eval(unicode(self.proc.stdout.readline(),'latin1').encode('utf-8'))
-            except:
-                continue
+            answers = self.receiveObj()
+
+            #try:
+            #    answers = eval(unicode(self.proc.stdout.readline(),'latin1').encode('utf-8'))
+            #except:
+            #    continue
 
             # answer to queue
             for commandId, dataFromPipe in answers:

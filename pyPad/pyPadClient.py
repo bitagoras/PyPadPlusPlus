@@ -3,23 +3,28 @@
 #
 
 import sys, os
-PY3 = sys.version_info[0] >= 3
 import code, time
 from types import ModuleType
 from codeop import compile_command
 import traceback
 import textwrap
 import threading
-from . import introspect
-if PY3:
-    import queue
-else:
-    import Queue as queue
-from copy import copy
-try:
-   import cPickle as pickle
-except:
-   import pickle
+import introspect
+import queue
+
+stdout = sys.stdout
+
+def log(s):
+    with open(r'C:\prog\Npp7.9_test\log.txt','a') as f:
+        f.write(s)
+
+import sys, pickle, base64
+def receive(): return input()
+def send(obj): stdout.write(obj+'\n')
+def pack(obj): return base64.b64encode(pickle.dumps(obj))
+def unpack(packetObj): return pickle.loads(base64.b64decode(packetObj))
+def receiveObj(): return unpack(receive().encode('ascii'))
+def sendObj(obj): stdout.buffer.write(pack(obj)+b'\n')
 
 class bufferOut:
     def __init__(self):
@@ -49,6 +54,8 @@ class PseudoFileOutBuffer:
 
     def writeStdErr(self, s):
         self.buffer.write(s, True)
+
+    def flush(self): pass
 
 pipedFunctions = {}
 def fromPipe(commandId):
@@ -275,13 +282,14 @@ def startLocalClient():
     clientInterp = interpreter()
     dataQueueOut = queue.Queue()
     dataQueueIn = queue.Queue()
-    stdin = clientInterp.stdin.buffer if PY3 else clientInterp.stdin
 
     def communicationLoop():
         while True:
             # receive the id and input of the function
-            data = stdin.readline()
-            commandId, dataIn = eval(data)
+            try:
+                commandId, dataIn = receiveObj()
+            except:
+                commandId, dataIn = 'Z', None
             # to queue for execution in main thread
             if commandId in 'CD':
                 dataQueueIn.put((commandId, dataIn))
@@ -296,7 +304,7 @@ def startLocalClient():
             answers = []
             while not dataQueueOut.empty():
                 answers.append(dataQueueOut.get())
-            clientInterp.stdout.write(repr(answers)+'\n')
+            sendObj(answers)
 
     thread = threading.Thread(name='communicationLoop', target=communicationLoop, args=())
     thread.start()

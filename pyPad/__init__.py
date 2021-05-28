@@ -2,19 +2,15 @@
 # requires the Python Script plugin.
 
 __author__ = "Christian Schirm"
-__copyright__ = "Copyright 2019"
+__copyright__ = "Copyright 2021"
 __license__ = "GPLv3"
-__version__ = "1.2.1"
+__version__ = "1.3"
 
 import Npp
 from Npp import editor, console, notepad
-import code, sys, time, os
+import sys, os
 PY3 = sys.version_info[0] >= 3
-from codeop import compile_command
-#import introspect  # Module for code introspection from the wxPython project
-import traceback
 import threading
-import textwrap
 from math import sin, pi
 
 from ctypes import windll, Structure, c_ulong, byref
@@ -61,7 +57,7 @@ class pyPadPlusPlus:
         sys.stdout=PseudoFileOut(Npp.console.write)
         sys.stderr=PseudoFileOut(Npp.console.writeError)
         sys.stdout.outp=PseudoFileOut(Npp.console.write)
-        
+
         self.matplotlib_eventHandler = matplotlib_eventHandler
         self.matplotlib_enabled = False
         self.popupForUnselectedVariable = popupForUnselectedVariable
@@ -72,8 +68,6 @@ class pyPadPlusPlus:
         if self.externalPython:
             from . import pyPadHost
             self.interp = pyPadHost.interpreter(externalPython, outBuffer=self.outBuffer)
-            #from . import pyPadRemoteHost
-            #self.interp = pyPadRemoteHost.interpreter(host="127.0.0.5", port=8888, outBuffer=self.outBuffer)
         else:
             from . import pyPadClient
             self.interp = pyPadClient.interpreter()
@@ -209,7 +203,7 @@ class pyPadPlusPlus:
         #if not self.interp.active():
         try:
             r = self.interp.flush()
-            if r is not None: 
+            if r is not None:
                 err, result = r
                 if result:
                     self.outBuffer(result)
@@ -330,7 +324,7 @@ class pyPadPlusPlus:
                         self.setMarkers(iLineStart, iLineEnd, block, iMarker=self.m_error, bufferID=bufferID)
                         return
                     iCodeLineStart, iLineEnd, isEmpty, inspectLineBefore = nextLine
-                        
+
         if onlyInsideCodeLines and not selection and not iLineStart <= iLineCursor <= iLineEnd:
             self.hideMarkers()
             self.bufferActive = 0
@@ -420,7 +414,7 @@ class pyPadPlusPlus:
             isIndent = isCodeLine and (line.startswith(' ') or line.startswith('\t'))
             requireLineBefore = isIndent or line.startswith('else:') or line.startswith('elif') \
                     or line.startswith('except:') or line.startswith('finally:')
-            inspectLineBefore = line.startswith('def ') or inspectLineBefore or requireLineBefore 
+            inspectLineBefore = line.startswith('def ') or inspectLineBefore or requireLineBefore
             satisfied = isCodeLine and not (requireLineBefore or inspectLineBefore)
             satisfied = satisfied or not (requireLineBefore or isCodeLine or inspectLineBefore)
             if isDecorator:

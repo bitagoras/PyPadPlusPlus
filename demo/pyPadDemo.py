@@ -5,7 +5,7 @@
 # <Shift> + <Return> executes the smallest possible piece of code
 # that includes the line at the cursor or next to the cursor.
 
-print "hello world"
+print("hello world")
 
 # With <Ctrl> + <Shift> + <Return> the cursor stays at its position
 # and the same line can be executed several times.
@@ -19,15 +19,15 @@ print "hello world"
 
 for i in 1,2,3:
     s = str(i) * 8
-    print "loop", s
+    print("loop", s)
 
 # Multiple lines can be executed by selection and <Shift> + <Return>.
 # The selection doesn't have to cover the whole line.
 # With the middle mouse button (mouse wheel button) a single or
 # multi line command or a selection can be executed.
 
-print "* First line"
-print "* Second line"
+print("* First line")
+print("* Second line")
 
 
 #%% Cells of code can be started from special comments "#%%"
@@ -45,7 +45,7 @@ first line or above"""
 # An animated dark line indicates that Python is busy.
 import time
 for i in 1,2,3,4,5:
-    print "wait for", i, '*'*i
+    print("wait for", i, '*'*i)
     time.sleep(1)
     # you can interrupt and restart the kernel with <Alt> + <R>
     # when you use an external python installation of your system
@@ -58,14 +58,14 @@ a = [(1,13), (4,12),
      (6,11), (2,15),
      (1,12), (5,7)),
      (1,12), (5,14)]
-     
+
 def test(x):
-    print 'We divide', x, 'by another number.'
-    print 'The result is:'
-    print x / 0
-    print 'No runtime'
-    print 'error is present'
-    print 'any more.'
+    print('We divide', x, 'by another number.')
+    print('The result is:')
+    print(x / 0)
+    print('No runtime')
+    print('error is present')
+    print('any more.')
 
 # demonstrates a runtime error
 test(5)
@@ -123,11 +123,11 @@ swich = True
 
 # When the console is closed, it can be restored by <Ctrl> + <Alt> + <C>
 
-# The console has an undo buffer. print some lines, click in the consol
+# The console has an undo buffer. print(some lines, click in the console
 # and press undo (<Ctrl> + <Z>) to unto the print.
-print '1.' + ((' First long multi line output.'*3)+'\n')*3
-print '2.' + ((' Second long multi line output.'*3)+'\n')*3
-print '3.' + ((' Third long multi line output.'*3)+'\n')*3
+print('1.' + ((' First long multi line output.'*3)+'\n')*3)
+print('2.' + ((' Second long multi line output.'*3)+'\n')*3)
+print('3.' + ((' Third long multi line output.'*3)+'\n')*3)
 
 
 #%% PythonScript
