@@ -7,7 +7,7 @@ logDir = os.path.expanduser("~")
 path = os.path.join(logDir, filename)
 
 if text:
-    with file(path,'a') as f:
+    with open(path,'a') as f:
         f.write('#%% ' + '_'*25 + ' ' + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' ' + '_'*25 + '\n\n' + text.replace('\r','').strip() + '\n\n')
     n = len(text.splitlines())
     Npp.notepad.messageBox('%i lines logged to %s'%(n,filename))
