@@ -9,7 +9,7 @@ from codeop import compile_command
 import traceback
 import textwrap
 import threading
-import introspect
+from . import introspect
 import queue
 
 stdout = sys.stdout
