@@ -71,7 +71,7 @@ If you need to install PyPadPlusPlus in another version of Notepad++ you have to
     * `pyPadExecute.py     <Shift> + <Enter>`
     * `pyPadExecuteFix.py  <Shift> + <Ctrl> + <Enter>`
     * `pyPadClear.py       <Shift> + <Ctrl> + <C>`
-    * `pyPadCalltip.py     <Shift> + <Ctrl> + <Space>`
+    * `pyPadCalltip.py     <Alt> + <Space>`
     * `Show Console        <Ctrl> + <Alt> + <C>`
     * `pyPadRestart.py     <Alt> + <R>`
     * `codeSnippetsLog.py  <Alt> + <S>`
