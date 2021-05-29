@@ -45,8 +45,9 @@ popupForUnselectedVariable = False
 #
 popupForSelectedExpression = False
 
-# The latter two options are recommended to be set to false. The two features
-# are allways active for the defined keyboard shortcut to script pyPadCalltip.py.
+# The latter two options are recommended to be set to false to prevent unintentional
+# code execution. The two features are allways active for the defined keyboard shortcut
+# linked to script pyPadCalltip.py (e.g. <Alt> + <Space>).
 
 # Start pyPadPlusPlus
 import Npp, pyPad
