@@ -39,7 +39,7 @@ The extension comes with another little feature that fits perfectly in the workf
 #### Download
 
 PyPadPlusPlus requires Notepad++ and PythonScript. Since the installation is quite cumbersome you can download the [latest release](https://github.com/bitagoras/PyPadPlusPlus/releases/latest) ready-to-play in a bundle with Notepad++ v8.1, PythonScript v3.0.8.0 and Python 3.9 as portable version:
-* Download [`npp.8.1_32bit_PyPadPlusPlus1.3.0.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.3.0/npp.8.1_32bit_PyPadPlusPlus1.3.0.zip), unzip it into a folder and start `notepad++.exe`.
+* Download [`npp8.1_32bit_PyPadPlusPlus1.3.0.zip`](https://github.com/bitagoras/PyPadPlusPlus/releases/download/v1.3.0/npp8.1_32bit_PyPadPlusPlus1.3.0.zip), unzip it into a folder and start `notepad++.exe`.
 
 This version also includes multi cursor selection like in Sublimetext or VSCode:
 * select next: `<Ctrl> + <D>`
