@@ -11,7 +11,7 @@ Selecting a variable and hovering over it with the mouse or selecting any expres
 
 The extension comes with another little feature that fits perfectly in the workflow of PyPadPlusPlus. It allows you to log small pieces of code you wish to keep but don't know where to store. Just select any piece of code and press the keyboard shortcut `<Alt> + <S>`. The selection will be added to a file `codeSnippetsLog.txt` with the time and date in a comment line. Pressing the shortcut again without any selection opens this file. It acts as a kind of "Python diary" for code snippets.
 
-  <img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/demo/pyPadDemo.gif">
+<img src="https://raw.githubusercontent.com/bitagoras/PyPadPlusPlus/master/demo/pyPadDemo.gif">
 
 #### Features
 
@@ -35,6 +35,11 @@ The extension comes with another little feature that fits perfectly in the workf
 * Take controll over Notepad++ with the Npp module provided by PythonScript (only available when using the internal Python. Load library with `import Npp`)
 * Reset and restart Python kernel with `<Alt> + <R>`, e.g. when stuck in endless loop. (only available when using an external Python, otherwise this only performs a variable reset)
 * Matplotlib event handler to hold multiple active plot windows
+
+#### Introduction
+See also introduction Video by Amit Christian:
+
+<a href="https://youtu.be/qSwbavkYE3w"><img src="https://i.imgur.com/QAdLlON.png" width="400"></a>
 
 #### Download
 
