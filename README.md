@@ -36,8 +36,8 @@ The extension comes with another little feature that fits perfectly in the workf
 * Reset and restart Python kernel with `<Alt> + <R>`, e.g. when stuck in endless loop. (only available when using an external Python, otherwise this only performs a variable reset)
 * Matplotlib event handler to hold multiple active plot windows
 
-#### Introduction
-See also introduction Video by Amit Christian:
+#### Tutorial
+Check out a tutorial video by Amit Christian:
 
 <a href="https://youtu.be/qSwbavkYE3w"><img src="https://i.imgur.com/QAdLlON.png" width="400"></a>
 
