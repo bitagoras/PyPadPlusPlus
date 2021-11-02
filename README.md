@@ -37,7 +37,7 @@ The extension comes with another little feature that fits perfectly in the workf
 * Matplotlib event handler to hold multiple active plot windows
 
 #### Tutorial
-Check out tutorial video on PyPadPlusPlus by Amit Christian:
+Tutorial video on PyPadPlusPlus by Amit Christian:
 
 <a href="https://youtu.be/qSwbavkYE3w"><img src="https://i.imgur.com/QAdLlON.png" width="400"></a>
 
