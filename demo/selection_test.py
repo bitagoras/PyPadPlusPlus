@@ -55,8 +55,26 @@ b = 6 \
     + 3
 c = 4
 
+# TODO: too many lines are selected !!!
+class a:
+    def __enter__(self, *a): pass
+    def __exit__(self, *a):pass
+
+#
+with a() as b,\
+        a() as c:
+    if True:
+        pass
+ 
+with a() as b,\
+        a() as c:
+    if True:
+        pass
+
 def test(x):
     pass
+
+
 
 @test
 @test
