@@ -23,7 +23,7 @@ The extension comes with another little feature that fits perfectly in the workf
 * A color marker highlights last executed lines
 * Animated color marker for active lines
 * Tooltip for run-time variable and object inspection of selected items and mouse hover or `<Alt> + <Space>`.
-* Evaluate variables below the cursor or any selected expression with `<Alt> + <Space>`, even some code is still running
+* Evaluate any selected expression with `<Alt> + <Space>`, even while the code is still running
 * Special Tooltip with size and shape information of numpy arrays
 * Code auto completion for run-time defined object properties, dictionary keys, function calls
 * Calltip for function calls, doc string and module help
