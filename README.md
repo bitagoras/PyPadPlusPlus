@@ -69,6 +69,7 @@ If you need to install PyPadPlusPlus in another version of Notepad++ there is so
     * `Show Console        <Ctrl> + <Alt> + <C>`
     * `pyPadRestart.py     <Alt> + <R>`
     * `codeSnippetsLog.py  <Alt> + <S>`
+    
     Note that you have to unset some conflicting shortcuts (Shortcuts can be removed by choosing "None" in the list of keys).
 6. If you want to use the Python installation of your system, open the file
   `notepad++\plugins\PythonScript\scripts\` and set the variable `pythonPath` to the path that contains your `pythonw.exe`.
