@@ -33,7 +33,7 @@ The extension comes with another little feature that fits perfectly in the workf
 * Clear output console with `<Shift> + <Ctrl> + <C>`.
 * Internal or external Python distribution can be used for Python 3 kernels.
 * Take controll over Notepad++ with the Npp module provided by PythonScript (only available when using the internal Python. Load library with `import Npp`)
-* Reset and restart Python kernel with `<Alt> + <R>`, e.g. when stuck in endless loop. (only available when using an external Python, otherwise this only performs a variable reset)
+* Reset and restart Python kernel with `<Alt> + <R>`, e.g. when stuck in endless loop. (only available when using an external Python, otherwise this only performs a variable reset. This function is currently broken.)
 * Matplotlib event handler to hold multiple active plot windows
 
 #### Tutorial
