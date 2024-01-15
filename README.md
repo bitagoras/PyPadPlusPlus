@@ -29,7 +29,7 @@ The extension comes with another little feature that fits perfectly in the workf
 * Calltip for function calls, doc string and module help
 * Special Tooltip to quickly switch between `True` and `False`
 * Click on any Tooltip to show full string or help text in output console
-* Output console has an undo buffer (click inside and press `<Ctrl> + <z>`)
+* Output console has an undo buffer (click inside and press `<Ctrl> + <z>`). This can also be used to show the Python version and initialization text after startup.
 * Clear output console with `<Shift> + <Ctrl> + <C>`.
 * Internal or external Python distribution can be used for Python 3 kernels.
 * Take controll over Notepad++ with the Npp module provided by PythonScript (only available when using the internal Python. Load library with `import Npp`)
