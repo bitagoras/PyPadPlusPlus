@@ -1,4 +1,5 @@
 # PyPadPlusPlus
+_Please note that this project has been discontinued and is no longer maintained. Instead, a similar project called [pylot](https://github.com/bitagoras/pylot) has been created as an extension to Visual Studio Code._
 ### Addon for Notepad++ and PythonScript for interactive Python development
 
 PyPadPlusPlus is an interactive Python environment based on Notepad++ (https://notepad-plus-plus.org/) and PythonScript (https://github.com/bruderstein/PythonScript/).
